@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/editor_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- 상단바: sparkle + AI Search -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_sparkle"
+                android:contentDescription="AI" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="AI Search"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/editor_title" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/editor_divider" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp">
+
+                <!-- 로딩 -->
+                <ProgressBar
+                    android:id="@+id/pb_loading"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="24dp"
+                    android:visibility="gone" />
+
+                <!-- AI 답변 카드 -->
+                <TextView
+                    android:id="@+id/tv_answer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_card_white"
+                    android:padding="14dp"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="@color/editor_title"
+                    android:textIsSelectable="true"
+                    android:visibility="gone" />
+
+                <!-- 참고 문서 목록(동적으로 item_search_result 카드가 추가됨) -->
+                <LinearLayout
+                    android:id="@+id/ll_results"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <!-- 초기 안내(검색 전). 검색이 실행되면 숨긴다. 예시를 탭하면 그 질문으로 검색한다. -->
+                <LinearLayout
+                    android:id="@+id/ll_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:text="이런 질문을 해보세요"
+                        android:textSize="13sp"
+                        android:textColor="@color/editor_meta" />
+
+                    <TextView android:id="@+id/ex1" style="@style/SearchExample" android:text="페이지네이션 버그와 관련된 문서 찾아줘" />
+                    <TextView android:id="@+id/ex2" style="@style/SearchExample" android:text="최근 릴리스 체크리스트 보여줘" />
+                    <TextView android:id="@+id/ex3" style="@style/SearchExample" android:text="온보딩 문서를 요약해줘" />
+                    <TextView android:id="@+id/ex4" style="@style/SearchExample" android:text="결제 오류 처리 가이드 찾아줘" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- 하단 고정 AI 입력 바 (플로팅 네비 위) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_search_white"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="76dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_sparkle"
+                android:contentDescription="AI" />
+
+            <EditText
+                android:id="@+id/et_search"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:background="@null"
+                android:hint="Ask FixLog to find a document..."
+                android:textSize="15sp"
+                android:textColor="@color/editor_title"
+                android:textColorHint="@color/editor_meta"
+                android:inputType="text"
+                android:imeOptions="actionSearch"
+                android:maxLines="1"
+                android:importantForAutofill="no" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <include
+        android:id="@+id/bottom_nav"
+        layout="@layout/view_bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp" />
+
+</FrameLayout>

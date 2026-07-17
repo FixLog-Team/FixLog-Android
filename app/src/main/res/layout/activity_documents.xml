@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/editor_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- 상단바 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Release Notes"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/editor_title"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/editor_divider" />
+
+        <!-- NestedScrollView: 내부 RecyclerView(rv_browser, wrap_content)가 전체 항목 높이로
+             측정되도록 한다. 일반 ScrollView에선 RecyclerView가 첫 항목만 레이아웃되는 버그가 있었다. -->
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="96dp">
+
+                <!-- 문서 검색 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_search_white"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_search"
+                        android:contentDescription="검색" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:text="문서 검색..."
+                        android:textSize="15sp"
+                        android:textColor="@color/editor_meta" />
+                </LinearLayout>
+
+                <!-- AI 검색 힌트 배너 -->
+                <LinearLayout
+                    android:id="@+id/ai_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_ai_banner"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="12dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_sparkle"
+                        android:contentDescription="AI" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:text="문서 위치를 모르겠나요? AI 검색으로 의미 기반 탐색을 해보세요."
+                        android:textSize="13sp"
+                        android:textColor="@color/editor_title" />
+                </LinearLayout>
+
+                <!-- 최근 문서 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="최근 문서"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/editor_title" />
+
+                <include android:id="@+id/doc1" layout="@layout/item_doc_card"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" />
+
+                <View style="@style/RowDivider" />
+
+                <include android:id="@+id/doc2" layout="@layout/item_doc_card"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+                <View style="@style/RowDivider" />
+
+                <include android:id="@+id/doc3" layout="@layout/item_doc_card"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+                <View style="@style/RowDivider" />
+
+                <include android:id="@+id/doc4" layout="@layout/item_doc_card"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+                <!-- 문서 리스트 (폴더 탐색) -->
+                <TextView
+                    android:id="@+id/tv_browser_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="문서 리스트"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/editor_title" />
+
+                <!-- 현재 경로(breadcrumb): 코드에서 세그먼트를 채운다. 각 세그먼트 클릭 시 해당 위치로 이동. -->
+                <HorizontalScrollView
+                    android:id="@+id/breadcrumb_scroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/breadcrumb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical" />
+                </HorizontalScrollView>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_browser"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:nestedScrollingEnabled="false" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
+
+    <include
+        android:id="@+id/bottom_nav"
+        layout="@layout/view_bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp" />
+
+</FrameLayout>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="blue_primary">#1976D2</color>
+    <color name="text_primary">#333333</color>
+    <color name="text_secondary">#999999</color>
+    <color name="text_date">#999999</color>
+    <color name="search_bg">#F2F2F2</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="red_logout">#FF0000</color>
+
+    <!-- Editor(디자인 1단계) 팔레트 -->
+    <color name="editor_bg">#F7F7F8</color>
+    <color name="editor_title">#1A1A1A</color>
+    <color name="editor_meta">#6B7280</color>
+    <color name="editor_divider">#ECECEC</color>
+    <color name="icon_dark">#374151</color>
+    <color name="editor_blue">#2563EB</color>
+    <color name="published_text">#16A34A</color>
+    <color name="published_bg">#E7F7EE</color>
+
+    <!-- 새 페이지(홈/검색/문서) 추가 팔레트 -->
+    <color name="review_text">#B45309</color>
+    <color name="review_bg">#FEF3C7</color>
+    <color name="chip_border">#E5E7EB</color>
+    <color name="ai_banner_bg">#EEF4FF</color>
+    <color name="ai_banner_border">#DBE4FF</color>
+    <color name="card_border">#E5E7EB</color>
+    <color name="muted_bg">#F3F4F6</color>
+</resources>

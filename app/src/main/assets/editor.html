@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Editor</title>
+    <!-- BlockNote core는 API 안정성을 위해 버전 핀 고정(@0.51.4). "latest"는 커스텀 블록 API가 자주 바뀜. -->
+    <link rel="stylesheet" href="https://esm.sh/@blocknote/core@0.51.4/style.css" />
+    <style>
+        html, body {
+            margin: 0; padding: 0; min-height: 100%;
+            background: #F7F7F8; color: #1A1A1A;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-text-size-adjust: 100%;
+            overflow-x: hidden;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        #status { padding: 8px 16px; font-size: 12px; color: #888; }
+
+        /* ---- 문서 헤더 (본문과 함께 스크롤) ---- */
+        #doc-header { padding: 16px 16px 0; }
+        #doc-title {
+            margin: 4px 0 12px; font-size: 28px; line-height: 1.2;
+            font-weight: 800; color: #1A1A1A; word-break: break-word;
+        }
+        #doc-title:focus { outline: none; }
+        /* 비어 있을 때 플레이스홀더 표시(직접 편집용). */
+        #doc-title:empty::before {
+            content: attr(data-placeholder);
+            color: #B0B4BB; font-weight: 800;
+        }
+        #doc-meta {
+            display: flex; flex-wrap: wrap; align-items: center;
+            width: 100%; gap: 6px 10px; font-size: 13px; color: #6B7280;
+        }
+        #doc-meta > span { white-space: nowrap; }
+        #doc-meta .avatar {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: #111827; color: #fff; font-size: 10px; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        #doc-cat {
+            margin-top: 6px; font-size: 13px; color: #6B7280;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #doc-status {
+            display: inline-flex; align-items: center; gap: 6px;
+            margin-top: 10px; padding: 3px 10px; border-radius: 999px;
+            background: #E7F7EE; color: #16A34A; font-size: 12px; font-weight: 600;
+        }
+        #doc-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #16A34A; }
+
+        /* ---- 에디터 본문 ---- */
+        #editor { padding: 12px 8px 48px; }
+        .ProseMirror { outline: none; font-size: 16px; line-height: 1.6; color: #1F2937; }
+        .ProseMirror p { margin: 0.4em 0; }
+        .ProseMirror h1 { font-size: 26px; font-weight: 800; }
+        .ProseMirror h2 { font-size: 20px; font-weight: 700; margin-top: 0.8em; }
+        .ProseMirror h3 { font-size: 17px; font-weight: 700; }
+
+        /* 체크리스트: 체크박스 파란색 + 완료 시 취소선 */
+        .ProseMirror input[type="checkbox"] { accent-color: #2563EB; width: 18px; height: 18px; }
+        [data-checked="true"] .bn-inline-content,
+        .bn-block-content[data-checked="true"] { text-decoration: line-through; color: #9CA3AF; }
+
+        /* 콜아웃: 내장 quote 블록을 파란 정보 박스로 재스타일 */
+        .bn-block-content[data-content-type="quote"] {
+            position: relative;
+            background: #EEF4FF; border: 1px solid #DBE4FF; border-left: 1px solid #DBE4FF;
+            border-radius: 10px; padding: 12px 14px 12px 40px; margin: 10px 0;
+            font-style: normal; color: #1F2937;
+        }
+        .bn-block-content[data-content-type="quote"]::before {
+            content: "ⓘ"; position: absolute; left: 14px; top: 11px;
+            color: #2563EB; font-weight: 700; font-style: normal;
+        }
+
+        /* 코드 블록 */
+        .ProseMirror pre {
+            background: #F3F4F6; border-radius: 8px; padding: 12px 14px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 13px; line-height: 1.5; color: #24292E; overflow-x: auto;
+        }
+        .ProseMirror code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+        /* 표 */
+        .bn-block-content[data-content-type="table"] { font-size: 14px; }
+
+        /* 파일 첨부: 카드형 컨테이너 */
+        .bn-block-content[data-content-type="file"] {
+            background: #ffffff; border: 1px solid #E5E7EB; border-radius: 10px;
+            padding: 10px 12px; margin: 10px 0;
+        }
+
+        /* Floating formatting toolbar */
+        #toolbar {
+            position: fixed; display: none; flex-direction: row;
+            background: #ffffff; border: 1px solid #e0e0e0; border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); padding: 4px; gap: 2px; z-index: 1000;
+        }
+        #toolbar.show { display: flex; }
+        .tb-btn {
+            background: transparent; border: 0; padding: 8px 12px; font-size: 14px;
+            cursor: pointer; border-radius: 6px; color: #333; min-width: 40px;
+        }
+        .tb-btn:active { background: #e3f2fd; }
+        .tb-btn.active { background: #e3f2fd; color: #1976d2; }
+        .tb-btn.bold { font-weight: 700; }
+        .tb-btn.italic { font-style: italic; }
+        .tb-btn.underline { text-decoration: underline; }
+        .tb-btn.strike { text-decoration: line-through; }
+    </style>
+</head>
+<body>
+    <div id="status">Loading editor…</div>
+
+    <!-- 문서 헤더: 제목/메타는 네이티브(setDocumentTitle/setDocumentMeta)에서 주입. 아래는 로딩 전 기본값. -->
+    <div id="doc-header">
+        <div id="doc-title" contenteditable="true" data-placeholder="제목을 입력하세요"
+             enterkeyhint="next" spellcheck="false"></div>
+        <div id="doc-meta">
+            <span class="avatar">·</span>
+            <span id="meta-author" class="meta-author">—</span>
+            <span id="meta-updated" class="meta-updated"></span>
+        </div>
+        <div id="doc-cat"></div>
+        <div id="doc-status"><span class="dot"></span>Draft</div>
+    </div>
+
+    <div id="editor"></div>
+
+    <div id="toolbar" role="toolbar" aria-label="Formatting">
+        <button class="tb-btn bold" data-style="bold">B</button>
+        <button class="tb-btn italic" data-style="italic">I</button>
+        <button class="tb-btn underline" data-style="underline">U</button>
+        <button class="tb-btn strike" data-style="strike">S</button>
+    </div>
+
+    <script type="module">
+        const status = document.getElementById("status");
+        const toolbar = document.getElementById("toolbar");
+
+        // 네이티브에서 문서 제목을 주입할 때 호출.
+        // 사용자가 헤더 제목을 직접 편집 중(포커스)이면 덮어쓰지 않는다 → 캐럿 튐 방지.
+        window.setDocumentTitle = (t) => {
+            const el = document.getElementById("doc-title");
+            if (!el || el === document.activeElement) return;
+            const next = (t == null) ? "" : String(t);
+            if (el.textContent === next) return;
+            el.textContent = next;
+        };
+
+        // 네이티브에서 문서 메타(작성자/수정일/카테고리/상태)를 주입할 때 호출.
+        // m = { title, author, updated, category, status }
+        window.setDocumentMeta = (m) => {
+            try {
+                if (!m) return;
+                if (typeof m === "string") m = JSON.parse(m);
+                if (m.title) window.setDocumentTitle(m.title);
+                const setText = (id, v) => {
+                    const el = document.getElementById(id);
+                    if (el && v != null && v !== "") el.textContent = v;
+                };
+                setText("meta-author", m.author);
+                setText("meta-updated", m.updated);
+                if (m.category) {
+                    const c = document.getElementById("doc-cat");
+                    if (c) c.textContent = m.category;
+                }
+                if (m.author) {
+                    const av = document.querySelector("#doc-meta .avatar");
+                    if (av) {
+                        const p = m.author.trim().split(/\s+/);
+                        av.textContent = ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "·";
+                    }
+                }
+                if (m.status) {
+                    const st = document.getElementById("doc-status");
+                    if (st) st.innerHTML = '<span class="dot"></span>' + m.status;
+                }
+            } catch (e) { console.error("setDocumentMeta", e); }
+        };
+
+        // --- Slash command catalog (filtered locally before sending to native) ---
+        const SLASH_COMMANDS = [
+            { id: "paragraph",    title: "Paragraph",       subtitle: "Plain text block" },
+            { id: "heading1",     title: "Heading 1",       subtitle: "Big section heading" },
+            { id: "heading2",     title: "Heading 2",       subtitle: "Medium heading" },
+            { id: "heading3",     title: "Heading 3",       subtitle: "Small heading" },
+            { id: "bulletList",   title: "Bulleted list",   subtitle: "Unordered list" },
+            { id: "numberedList", title: "Numbered list",   subtitle: "Ordered list" },
+            { id: "checkList",    title: "Check list",      subtitle: "Task list" },
+            { id: "callout",      title: "Callout",         subtitle: "Info box" },
+            { id: "codeBlock",    title: "Code block",      subtitle: "Monospace code" },
+            { id: "table",        title: "Table",           subtitle: "Rows and columns" },
+            { id: "file",         title: "File attachment", subtitle: "Attach a file" }
+        ];
+
+        // 인라인 텍스트를 갖지 않는 "복합" 블록: 변환(convert) 대신 새 블록으로 삽입한다.
+        const COMPLEX = new Set(["table", "file"]);
+
+        function specForCommand(id) {
+            switch (id) {
+                case "paragraph":    return { type: "paragraph" };
+                case "heading1":     return { type: "heading", props: { level: 1 } };
+                case "heading2":     return { type: "heading", props: { level: 2 } };
+                case "heading3":     return { type: "heading", props: { level: 3 } };
+                case "bulletList":   return { type: "bulletListItem" };
+                case "numberedList": return { type: "numberedListItem" };
+                case "checkList":    return { type: "checkListItem" };
+                case "callout":      return { type: "quote" };   // quote를 콜아웃 스타일로 렌더
+                case "codeBlock":    return { type: "codeBlock" };
+                case "table":        return { type: "table", content: { type: "tableContent", rows: [
+                                        { cells: ["", "", ""] }, { cells: ["", "", ""] }, { cells: ["", "", ""] }
+                                     ] } };
+                case "file":         return { type: "file" };
+                default: return null;
+            }
+        }
+
+        const hasAndroid = typeof Android !== "undefined" && Android !== null;
+        function notifySlash(state) {
+            if (!hasAndroid) return;
+            try { Android.onSlashMenuChanged(JSON.stringify(state)); }
+            catch (e) { console.error("bridge error", e); }
+        }
+        // 헤더 제목 편집 → 네이티브(앱바 제목/저장)로 전달.
+        function notifyTitle(text) {
+            if (!hasAndroid) return;
+            try { Android.onTitleChanged(text); }
+            catch (e) { console.error("bridge title error", e); }
+        }
+
+        // 본문 헤더 제목(#doc-title) 직접 편집 연결: 입력은 네이티브로 동기화,
+        // Enter는 줄바꿈 대신 본문으로 포커스 이동, 붙여넣기는 순수 텍스트.
+        (function setupTitleEditing() {
+            const el = document.getElementById("doc-title");
+            if (!el) return;
+            el.addEventListener("input", () => {
+                if (!el.textContent) el.innerHTML = "";  // 잔여 <br> 제거 → 플레이스홀더 복원
+                notifyTitle(el.textContent || "");
+            });
+            el.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    try { if (editor) editor.focus(); } catch (_) {}
+                }
+            });
+            el.addEventListener("paste", (e) => {
+                e.preventDefault();
+                const cb = e.clipboardData || window.clipboardData;
+                const text = (cb ? cb.getData("text") : "").replace(/[\r\n]+/g, " ");
+                document.execCommand("insertText", false, text);
+            });
+        })();
+
+        let editor;
+        // 에디터 로드 전에 네이티브가 본문을 주입하면 여기 보관했다가 mount 직후 적용한다.
+        let pendingContent = null;
+        // 명령 선택/취소 직후 짧은 억제 구간. 블록 변환 등 프로그램적 편집이 유발하는
+        // selectionchange/input 이벤트로 커맨드 메뉴가 다시 뜨는 것을 막는다.
+        // (keydown 키값에 의존하지 않아 소프트키보드/IME에도 안전.)
+        let slashSuppressUntil = 0;
+
+        // blocks(배열 또는 JSON 문자열)를 에디터 본문으로 치환. 에디터 준비 전이면 보류.
+        function applyContent(blocks) {
+            if (!editor) { pendingContent = blocks; return; }
+            try {
+                if (typeof blocks === "string") {
+                    const s = blocks.trim();
+                    if (!s) return;
+                    blocks = JSON.parse(s);
+                }
+                if (!Array.isArray(blocks) || blocks.length === 0) return; // 빈 본문이면 기본 문서 유지
+                editor.replaceBlocks(editor.document, blocks);
+            } catch (e) { console.error("setDocumentContent", e); }
+        }
+
+        // 네이티브에서 서버 본문(blocks JSON 문자열)을 주입할 때 호출.
+        window.setDocumentContent = (json) => applyContent(json);
+
+        // 네이티브가 저장 시 현재 본문(BlockNote 블록 배열)을 읽어갈 때 호출.
+        // 에디터 미준비 시 null을 반환해 네이티브가 저장을 건너뛰도록 한다(본문 유실 방지).
+        window.getDocumentContent = () => {
+            try { return editor ? editor.document : null; }
+            catch (e) { return null; }
+        };
+
+        // 네이티브가 AI 요약 시 현재 본문의 평문(plain text)을 읽어갈 때 호출.
+        // POST /ai/summarize 는 content 로 원문 텍스트를 직접 받으므로, 서버의 plainText
+        // 추출에 의존하지 않고 여기서 BlockNote 블록 트리를 평문으로 변환해 넘긴다.
+        window.getPlainText = () => {
+            try {
+                if (!editor) return "";
+                const lines = [];
+                const inlineText = (nodes) => (nodes || [])
+                    .map(c => (c && typeof c.text === "string") ? c.text : "")
+                    .join("");
+                const walk = (bs) => {
+                    for (const b of (bs || [])) {
+                        const content = b && b.content;
+                        if (Array.isArray(content)) {
+                            const line = inlineText(content);
+                            if (line) lines.push(line);
+                        } else if (content && Array.isArray(content.rows)) {
+                            for (const row of content.rows) {
+                                const cells = row && row.cells;
+                                if (!Array.isArray(cells)) continue;
+                                lines.push(cells
+                                    .map(cell => Array.isArray(cell) ? inlineText(cell) : ((cell && cell.text) || ""))
+                                    .join(" "));
+                            }
+                        }
+                        if (Array.isArray(b.children) && b.children.length) walk(b.children);
+                    }
+                };
+                walk(editor.document);
+                return lines.join("\n").trim();
+            } catch (e) { return ""; }
+        };
+
+        // Read plain text of the current block (joins inline text contents)
+        function getCurrentBlockText() {
+            try {
+                const cursor = editor.getTextCursorPosition();
+                const block = cursor && cursor.block;
+                if (!block || !Array.isArray(block.content)) return "";
+                return block.content
+                    .map(c => (c && c.type === "text" && typeof c.text === "string") ? c.text : "")
+                    .join("");
+            } catch (e) { return ""; }
+        }
+
+        // --- Public functions invoked by native code via evaluateJavascript ---
+        window.executeSlashCommand = (id) => {
+            try {
+                if (!editor) return;
+                const spec = specForCommand(id);
+                if (!spec) return;
+                const cursor = editor.getTextCursorPosition();
+                const block = cursor && cursor.block;
+                if (!block) return;
+
+                const text = getCurrentBlockText();
+                const remaining = text.replace(/\/[A-Za-z0-9]*$/, "");
+
+                if (COMPLEX.has(id)) {
+                    // 앞 텍스트는 유지하고, 복합 블록을 현재 블록 뒤에 새로 삽입
+                    editor.updateBlock(block, { content: remaining || [] });
+                    editor.insertBlocks([spec], block, "after");
+                } else if (!remaining) {
+                    // 빈 블록이면 타입만 변환
+                    editor.updateBlock(block, spec);
+                    editor.setTextCursorPosition(block, "end");
+                } else {
+                    // 앞 텍스트가 있으면 유지하고 새 블록을 뒤에 삽입
+                    editor.updateBlock(block, { content: remaining });
+                    const ins = editor.insertBlocks([spec], block, "after");
+                    const nb = ins && ins[0];
+                    if (nb) editor.setTextCursorPosition(nb, "end");
+                }
+                editor.focus();
+                // 명령 처리 직후의 프로그램적 편집 이벤트로 메뉴가 되살아나지 않도록 잠시 억제.
+                slashSuppressUntil = Date.now() + 600;
+                notifySlash({ show: false });
+            } catch (e) { console.error(e); }
+        };
+
+        // Called by native code when the bottom sheet is dismissed (with or without selection).
+        // Idempotent: strips the trailing /query from the current block if still present.
+        window.clearSlashText = () => {
+            try {
+                slashSuppressUntil = Date.now() + 600;
+                if (!editor) return;
+                const cursor = editor.getTextCursorPosition();
+                const block = cursor && cursor.block;
+                if (!block) return;
+                const remaining = getCurrentBlockText().replace(/\/[A-Za-z0-9]*$/, "");
+                editor.updateBlock(block, { content: remaining || [] });
+                editor.setTextCursorPosition(block, "end");
+            } catch (e) { console.error(e); }
+        };
+
+        // Match a trailing "/word" at end of current block; show/hide native menu accordingly.
+        // 명령 선택/취소 직후의 억제 구간에는 (프로그램적 편집 이벤트여도) 절대 열지 않는다.
+        function checkSlashTrigger() {
+            if (Date.now() < slashSuppressUntil) {
+                notifySlash({ show: false });
+                return;
+            }
+            const text = getCurrentBlockText();
+            const m = text.match(/\/([A-Za-z0-9]*)$/);
+            if (!m) {
+                notifySlash({ show: false });
+                return;
+            }
+            const q = m[1].toLowerCase();
+            const items = SLASH_COMMANDS.filter(c =>
+                !q || c.title.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
+            );
+            notifySlash({ show: true, query: m[1], items });
+        }
+
+        window.toggleStyle = (style) => {
+            try {
+                if (!editor) return;
+                const map = {
+                    bold: { bold: true }, italic: { italic: true },
+                    underline: { underline: true }, strike: { strike: true }
+                };
+                if (map[style]) editor.toggleStyles(map[style]);
+                editor.focus();
+            } catch (e) { console.error(e); }
+        };
+
+        try {
+            const { BlockNoteEditor } = await import("https://esm.sh/@blocknote/core@0.51.4");
+
+            // 실제 본문은 네이티브가 setDocumentContent로 주입한다. 초기값은 빈 문단 하나.
+            editor = BlockNoteEditor.create({
+                initialContent: [
+                    { type: "paragraph", content: "" }
+                ]
+            });
+            editor.mount(document.getElementById("editor"));
+            window.fixlogEditor = editor;
+
+            // 에디터 준비 전에 네이티브가 주입한 본문이 있으면 지금 적용.
+            if (pendingContent != null) {
+                const p = pendingContent;
+                pendingContent = null;
+                applyContent(p);
+            }
+
+            // --- Formatting toolbar (in-WebView floating UI) ---
+            if (editor.formattingToolbar?.onUpdate) {
+                editor.formattingToolbar.onUpdate((state) => {
+                    if (!state.show) { toolbar.classList.remove("show"); return; }
+                    const r = state.referencePos;
+                    const tbHeight = 44, padding = 8;
+                    let top = r.top - tbHeight - padding;
+                    if (top < 8) top = r.bottom + padding;
+                    const left = Math.max(8, Math.min(window.innerWidth - 220, r.left));
+                    toolbar.style.top = `${top}px`;
+                    toolbar.style.left = `${left}px`;
+                    toolbar.classList.add("show");
+
+                    const active = (typeof editor.getActiveStyles === "function")
+                        ? (editor.getActiveStyles() || {}) : {};
+                    toolbar.querySelectorAll(".tb-btn").forEach(btn => {
+                        btn.classList.toggle("active", !!active[btn.dataset.style]);
+                    });
+                });
+            }
+
+            // Prevent toolbar interactions from stealing selection focus
+            const swallowFocus = (e) => e.preventDefault();
+            toolbar.addEventListener("mousedown", swallowFocus);
+            toolbar.addEventListener("touchstart", swallowFocus, { passive: false });
+            toolbar.addEventListener("click", (e) => {
+                const btn = e.target.closest(".tb-btn");
+                if (!btn) return;
+                window.toggleStyle(btn.dataset.style);
+            });
+
+            // --- Slash menu: DOM-based detection (works with @blocknote/core alone) ---
+            const editorEl = document.getElementById("editor");
+            editorEl.addEventListener("input", checkSlashTrigger);
+            editorEl.addEventListener("keyup", checkSlashTrigger);
+            editorEl.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") notifySlash({ show: false });
+            });
+            document.addEventListener("selectionchange", checkSlashTrigger);
+
+            status.style.display = "none";
+        } catch (err) {
+            status.textContent = "Failed to load editor: " + err.message;
+            console.error(err);
+        }
+    </script>
+</body>
+</html>

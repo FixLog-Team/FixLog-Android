@@ -1,0 +1,50 @@
+# === Android Studio / IntelliJ ===
+*.iml
+/.idea/
+.gradle
+.externalNativeBuild
+.cxx
+
+# === Local config (machine-specific) ===
+/local.properties
+
+# === Build output ===
+/build
+/captures
+*.apk
+*.aar
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+
+# === Logs ===
+*.log
+
+# === Keystore / signing ===
+*.jks
+*.keystore
+keystore.properties
+
+# === Secrets / env / third-party config ===
+.env
+.env.local
+google-services.json
+
+# === Kotlin compiler caches ===
+.kotlin/
+
+# === Claude Code (machine-specific local settings) ===
+.claude/settings.local.json
+
+# === OS ===
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# === Other IDEs ===
+.vscode/

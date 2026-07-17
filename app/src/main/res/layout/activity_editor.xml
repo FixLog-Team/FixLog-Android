@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/editor_bg">
+
+    <!-- 앱바 + 에디터 본문 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- 상단 앱바: ‹ 뒤로가기 + 문서 제목(볼드) + ☆ 즐겨찾기. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@color/editor_bg"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="8dp">
+
+            <ImageView
+                android:id="@+id/btn_back"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_chevron_left"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/close" />
+
+            <EditText
+                android:id="@+id/tv_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:background="@null"
+                android:hint="@string/editor_title_hint"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/editor_title"
+                android:textColorHint="@color/editor_divider"
+                android:inputType="textCapSentences"
+                android:imeOptions="actionDone"
+                android:maxLines="1"
+                android:importantForAutofill="no" />
+
+            <ImageView
+                android:id="@+id/btn_favorite"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_star_outline"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/open" />
+
+            <ImageView
+                android:id="@+id/btn_ai"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_sparkle"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="AI" />
+
+            <ImageView
+                android:id="@+id/btn_more"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_more_horiz"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="더보기" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/editor_divider" />
+
+        <WebView
+            android:id="@+id/web_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/editor_bg" />
+    </LinearLayout>
+
+    <!-- 하단 플로팅 알약형 네비게이션 (공용 include) -->
+    <include
+        android:id="@+id/bottom_nav"
+        layout="@layout/view_bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp" />
+
+</FrameLayout>

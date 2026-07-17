@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="NAVIGATION">
+        <menu>
+            <item
+                android:id="@+id/nav_documents"
+                android:icon="@drawable/ic_folder"
+                android:title="My Documents"/>
+        </menu>
+    </item>
+
+    <item android:title="SETTINGS">
+        <menu>
+            <item
+                android:id="@+id/nav_logout"
+                android:title="Logout"
+                android:titleTextColor="@android:color/holo_red_dark"/>
+        </menu>
+    </item>
+
+</menu>

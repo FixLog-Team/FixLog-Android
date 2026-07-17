@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/editor_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- 상단바: Home + New 버튼 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Home"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/editor_title" />
+
+            <LinearLayout
+                android:id="@+id/btn_new"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_pill_blue"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_doc_add"
+                    android:tint="@color/white"
+                    android:contentDescription="New" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="New"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/editor_divider" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="20dp"
+                android:paddingBottom="96dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Good afternoon, Maria"
+                    android:textSize="14sp"
+                    android:textColor="@color/editor_meta" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="What are you looking for?"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/editor_title" />
+
+                <!-- AI 검색 진입 바 -->
+                <LinearLayout
+                    android:id="@+id/ai_search_bar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_search_white"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="14dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_sparkle"
+                        android:contentDescription="AI" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:text="Ask FixLog to find the document you need..."
+                        android:textSize="15sp"
+                        android:textColor="@color/editor_meta"
+                        android:ellipsize="end"
+                        android:maxLines="1" />
+                </LinearLayout>
+
+                <!-- 추천 프롬프트 칩 -->
+                <TextView
+                    android:id="@+id/chip1"
+                    style="@style/HomeChip"
+                    android:text="Find documents related to pagination bugs" />
+
+                <TextView
+                    android:id="@+id/chip2"
+                    style="@style/HomeChip"
+                    android:text="Show me the latest release checklist" />
+
+                <TextView
+                    android:id="@+id/chip3"
+                    style="@style/HomeChip"
+                    android:text="Summarize onboarding documents for new team members" />
+
+                <TextView
+                    android:id="@+id/chip4"
+                    style="@style/HomeChip"
+                    android:text="Find payment error handling guides" />
+
+                <!-- 빠른 동작 카드 (가로 스크롤) -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout style="@style/QuickCard" android:id="@+id/qa_new_doc">
+                            <ImageView style="@style/QuickCardIcon" android:src="@drawable/ic_doc_add" android:contentDescription="New Document" />
+                            <TextView style="@style/QuickCardLabel" android:text="New\nDocument" />
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/QuickCard" android:id="@+id/qa_new_folder">
+                            <ImageView style="@style/QuickCardIcon" android:src="@drawable/ic_folder" android:contentDescription="New Folder" />
+                            <TextView style="@style/QuickCardLabel" android:text="New\nFolder" />
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/QuickCard" android:id="@+id/qa_import">
+                            <ImageView style="@style/QuickCardIcon" android:src="@drawable/ic_import" android:contentDescription="Import Document" />
+                            <TextView style="@style/QuickCardLabel" android:text="Import\nDocument" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <!-- 최근 문서 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="Recent documents"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/editor_title" />
+
+                <include layout="@layout/item_doc_card"
+                    android:id="@+id/rec1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp" />
+
+                <include layout="@layout/item_doc_card"
+                    android:id="@+id/rec2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp" />
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <include
+        android:id="@+id/bottom_nav"
+        layout="@layout/view_bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp" />
+
+</FrameLayout>

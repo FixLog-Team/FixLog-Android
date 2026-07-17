@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">FixLog</string>
+    <string name="backend_client_id">532423093430-pfnoeb5e1ebve5dpopfqsghvgbm0jmd7.apps.googleusercontent.com</string>
+    <string name="backend_client_id2">532423093430-iit445pvvcipdoifsvgqdse7ir64r22v.apps.googleusercontent.com</string>
+    <string name="backend_client_id_kth">363171825810-nmf5jg42nbu41s3iraah2qnfk5532kc7.apps.googleusercontent.com</string>
+
+    <string name="open">open</string>
+    <string name="close">close</string>
+    <string name="editor_title_hint">제목을 입력하세요</string>
+
+    <!-- AI 검색 -->
+    <string name="search_failed">검색에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
+    <string name="untitled_document">제목 없음</string>
+
+    <!-- AI 실패 사유별 안내(검색/요약 공용) -->
+    <string name="ai_error_timeout">AI 응답이 너무 오래 걸려 시간이 초과됐어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="ai_error_network">서버에 연결할 수 없어요. 서버 실행과 네트워크(adb reverse) 상태를 확인해 주세요.</string>
+    <string name="ai_error_unauthorized">로그인이 만료됐어요. 다시 로그인해 주세요.</string>
+    <string name="ai_error_not_found">문서를 찾을 수 없어요.</string>
+    <string name="ai_error_invalid_request">요청을 처리할 수 없어요. 질문이 너무 길거나 형식이 올바르지 않아요.</string>
+    <string name="ai_error_server">AI 서버 처리 중 오류가 발생했어요. AI 사용량 한도(무료 할당량) 초과일 수 있으니 잠시 후 다시 시도해 주세요.</string>
+    <string name="ai_error_empty">결과가 비어 있어요.</string>
+    <string name="ai_error_unknown">문제가 발생했어요. 잠시 후 다시 시도해 주세요.</string>
+
+    <string name="google_sign_in">Google로 로그인</string>
+
+    <!-- 하단 네비게이션 레이블 (참조 디자인의 5개 항목) -->
+    <string name="nav_home">홈</string>
+    <string name="nav_search">검색</string>
+    <string name="nav_docs">문서</string>
+    <string name="nav_write">작성</string>
+    <string name="nav_all">전체</string>
+</resources>

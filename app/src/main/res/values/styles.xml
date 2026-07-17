@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 홈 추천 프롬프트 칩 -->
+    <style name="HomeChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:background">@drawable/bg_chip</item>
+        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:paddingVertical">10dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/editor_title</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <!-- 홈 빠른 동작 카드 -->
+    <style name="QuickCard">
+        <item name="android:layout_width">150dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:background">@drawable/bg_card_white</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="QuickCardIcon">
+        <item name="android:layout_width">36dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
+        <item name="android:background">@drawable/bg_icon_blue</item>
+        <item name="android:padding">8dp</item>
+    </style>
+
+    <style name="QuickCardLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/editor_title</item>
+    </style>
+
+    <!-- "전체" 다이얼로그 그리드 셀 -->
+    <style name="AllCell">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingVertical">12dp</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="AllCellIcon">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/bg_icon_blue</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
+    <style name="AllCellLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/editor_title</item>
+    </style>
+
+    <!-- AI 검색 결과 태그 칩 -->
+    <style name="TagChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:background">@drawable/bg_tag</item>
+        <item name="android:paddingHorizontal">10dp</item>
+        <item name="android:paddingVertical">4dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/editor_meta</item>
+    </style>
+
+    <!-- 문서 리스트 행 구분선 -->
+    <style name="RowDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/editor_divider</item>
+    </style>
+
+    <!-- AI 검색 예시 프롬프트(평문) -->
+    <style name="SearchExample">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">16dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/editor_meta</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+    </style>
+
+    <!-- AI 검색 후속질문 칩 -->
+    <style name="SearchChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:background">@drawable/bg_chip</item>
+        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:paddingVertical">10dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/editor_title</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+</resources>
