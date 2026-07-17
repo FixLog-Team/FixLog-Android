@@ -166,8 +166,13 @@ class EditorActivity : AppCompatActivity() {
         dialog.setContentView(view)
 
         val loading = view.findViewById<android.view.View>(R.id.loading)
+        val tvLoading = view.findViewById<TextView>(R.id.tv_loading)
         val tvSummary = view.findViewById<TextView>(R.id.tv_summary)
         view.findViewById<android.view.View>(R.id.btn_close).setOnClickListener { dialog.dismiss() }
+
+        // 저장 단계: circle indicator + "저장하는 중" 표시.
+        loading.visibility = android.view.View.VISIBLE
+        tvLoading.text = "문서를 저장하는 중…"
         dialog.show()
 
         // 최신 본문 저장 → 확보된 문서ID로 요약 요청.
@@ -177,6 +182,8 @@ class EditorActivity : AppCompatActivity() {
                 tvSummary.text = "먼저 문서 제목이나 내용을 작성해 주세요."
                 return@persistCurrent
             }
+            // 요약 단계: 라벨을 "요약하는 중"으로 전환.
+            tvLoading.text = "문서를 요약하는 중…"
             lifecycleScope.launch {
                 runCatching { AiApi.summarizeDocument(savedId) }
                     .onSuccess { summary ->
