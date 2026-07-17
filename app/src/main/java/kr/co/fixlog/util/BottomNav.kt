@@ -6,11 +6,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import kr.co.fixlog.R
 import kr.co.fixlog.activity.DocumentsActivity
 import kr.co.fixlog.activity.EditorActivity
 import kr.co.fixlog.activity.HomeActivity
 import kr.co.fixlog.activity.SearchActivity
+import kr.co.fixlog.data.remote.DocumentApi
 import kr.co.fixlog.databinding.ViewBottomNavBinding
 
 /**
@@ -55,7 +58,8 @@ object BottomNav {
             Tab.HOME -> HomeActivity::class.java
             Tab.SEARCH -> SearchActivity::class.java
             Tab.DOCS -> DocumentsActivity::class.java
-            Tab.WRITE -> EditorActivity::class.java
+            // 작성 탭은 "최근 작성 문서"를 열어야 하므로 별도 처리.
+            Tab.WRITE -> { openWrite(activity); return }
             Tab.ALL -> return
         }
         val intent = Intent(activity, cls).apply {
@@ -63,5 +67,27 @@ object BottomNav {
         }
         activity.startActivity(intent)
         activity.overridePendingTransition(0, 0)
+    }
+
+    /**
+     * 작성 탭 진입: 전에 작성한 문서가 있으면 가장 최근 문서를 열고, 없으면 새 문서 편집기를 연다.
+     * 최근 문서 조회 실패(네트워크/서버)도 새 문서로 폴백한다.
+     * 최신 문서를 확실히 반영하기 위해 REORDER_TO_FRONT는 쓰지 않고 새 인스턴스로 연다.
+     */
+    @Suppress("DEPRECATION")
+    private fun openWrite(activity: AppCompatActivity) {
+        activity.lifecycleScope.launch {
+            val latest = runCatching { DocumentApi.list(folderId = null, page = 0, size = 1) }
+                .getOrNull()?.items?.firstOrNull()
+            val intent = Intent(activity, EditorActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                if (latest != null) {
+                    putExtra(EditorActivity.EXTRA_FILE_ID, latest.documentId)
+                    putExtra(EditorActivity.EXTRA_FILE_NAME, latest.title)
+                }
+            }
+            activity.startActivity(intent)
+            activity.overridePendingTransition(0, 0)
+        }
     }
 }
