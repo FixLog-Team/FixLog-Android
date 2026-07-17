@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 채팅: 내가 보낸 질문. 오른쪽 정렬 파란 버블. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="end"
+    android:layout_marginBottom="14dp">
+
+    <TextView
+        android:id="@+id/tv_chat_question"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="280dp"
+        android:background="@drawable/bg_chat_user"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="10dp"
+        android:textSize="15sp"
+        android:lineSpacingExtra="2dp"
+        android:textColor="@color/white"
+        android:textIsSelectable="true" />
+</LinearLayout>

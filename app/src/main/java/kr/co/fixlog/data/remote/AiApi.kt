@@ -4,7 +4,6 @@ import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kr.co.fixlog.data.remote.dto.ApiResponse
-import kr.co.fixlog.data.remote.dto.AskRequest
 import kr.co.fixlog.data.remote.dto.AskResponse
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
@@ -55,8 +54,12 @@ object AiApi {
      * 답변 + 참고 문서 목록([AskResponse])을 반환. topK가 null이면 서버 기본값(5)을 쓴다.
      */
     suspend fun ask(question: String, topK: Int? = null): AskResponse = withContext(Dispatchers.IO) {
-        val payload = ApiClient.moshi.adapter(AskRequest::class.java)
-            .toJson(AskRequest(question, topK))
+        // topK는 선택 파라미터다. 값이 없으면 키 자체를 전송하지 않아 서버 기본값(5)을 쓰게 한다.
+        // (null을 담아 보내지 않고 아예 생략한다.)
+        val payload = JSONObject().apply {
+            put("question", question)
+            if (topK != null) put("topK", topK)
+        }.toString()
         val request = Request.Builder()
             .url("${ApiClient.BASE_URL}/ai/ask")
             .post(payload.toRequestBody(JSON))

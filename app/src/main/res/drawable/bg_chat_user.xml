@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 채팅 사용자(질문) 버블: 파란 배경, 우측 하단만 각지게. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/editor_blue" />
+    <corners
+        android:topLeftRadius="14dp"
+        android:topRightRadius="14dp"
+        android:bottomLeftRadius="14dp"
+        android:bottomRightRadius="4dp" />
+</shape>
