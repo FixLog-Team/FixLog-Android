@@ -1,5 +1,9 @@
 # FixLog Android
 
+## 시작하기
+
+새 맥에서 설정하려면 `bash setup-mac.sh` 실행. 자세한 절차는 [docs/SETUP.md](docs/SETUP.md).
+
 ---
 
 ## 기술 스택
