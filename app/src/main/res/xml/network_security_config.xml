@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    운영 트래픽은 HTTPS(fixlog.art)만 사용한다.
+    cleartext(HTTP)는 로컬 개발 서버(adb reverse localhost / 에뮬레이터 10.0.2.2)에서만 허용한다.
+    그 외 모든 도메인은 cleartext 차단(기본값).
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
