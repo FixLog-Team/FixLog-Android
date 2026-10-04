@@ -1,111 +1,297 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 설정 화면: 현재 로그인 계정 정보 + 로그아웃. -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- 설정 화면: 워크스페이스 관리(전환/추가/나가기·삭제) + 계정 정보 + 로그아웃. 하단 3탭 네비 포함. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/editor_bg">
 
-    <!-- 상단바: 뒤로가기 + 제목 -->
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="8dp">
-
-        <ImageView
-            android:id="@+id/btn_back"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            android:src="@drawable/ic_chevron_left"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="뒤로가기" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:text="설정"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="@color/editor_title" />
-    </LinearLayout>
-
-    <!-- 계정 정보 카드 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_margin="16dp"
-        android:padding="16dp"
-        android:background="@drawable/bg_account_card">
-
-        <TextView
-            android:id="@+id/tv_avatar"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:gravity="center"
-            android:text="·"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:background="@drawable/bg_avatar_circle" />
+        android:layout_height="match_parent"
+        android:paddingBottom="96dp"
+        android:clipToPadding="false">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="14dp"
             android:orientation="vertical">
 
+            <!-- 제목 -->
             <TextView
-                android:id="@+id/tv_user_name"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="—"
-                android:textSize="16sp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/nav_settings"
+                android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="@color/editor_title"
-                android:ellipsize="end"
-                android:maxLines="1" />
+                android:textColor="@color/editor_title" />
 
+            <!-- ============ 워크스페이스 섹션 ============ -->
             <TextView
-                android:id="@+id/tv_user_email"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="16dp"
+                android:text="@string/workspace"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/editor_meta" />
+
+            <!-- 현재 워크스페이스 카드(클릭 시 전환 팝업) -->
+            <LinearLayout
+                android:id="@+id/card_workspace"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text=""
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:padding="16dp"
+                android:background="@drawable/bg_card_white"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_current_workspace_hint"
+                        android:textSize="12sp"
+                        android:textColor="@color/editor_meta" />
+
+                    <TextView
+                        android:id="@+id/tv_ws_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/settings_personal_workspace"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/editor_title"
+                        android:ellipsize="end"
+                        android:maxLines="1" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_ws_role"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="@string/settings_personal"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:background="@drawable/bg_pill_blue" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="8dp"
+                    android:src="@drawable/ic_arrow_right"
+                    app:tint="@color/editor_meta"
+                    android:contentDescription="@string/settings_switch" />
+            </LinearLayout>
+
+            <!-- 워크스페이스 추가(주요 동작) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_add_ws"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="10dp"
+                android:text="@string/settings_add_workspace"
+                app:icon="@drawable/ic_doc_add"
+                style="@style/Widget.FixLog.Button.Primary" />
+
+            <!-- 워크스페이스 나가기 / 삭제(소유자=삭제) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_leave_ws"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_leave_workspace"
+                app:icon="@drawable/ic_close"
+                style="@style/Widget.FixLog.Button.Danger" />
+
+            <!-- ============ 공유 섹션 ============ -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/common_share"
                 android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/editor_meta" />
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tab_shared"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="6dp"
+                android:background="@android:color/transparent"
+                app:tabMode="fixed"
+                app:tabGravity="fill"
+                app:tabPaddingStart="0dp"
+                app:tabPaddingEnd="0dp"
+                app:tabInlineLabel="true"
+                app:tabRippleColor="@color/ai_banner_bg"
+                app:tabIndicator="@drawable/tab_indicator"
+                app:tabIndicatorColor="@color/editor_blue"
+                app:tabIndicatorFullWidth="false"
+                app:tabIndicatorHeight="3dp"
+                app:tabSelectedTextColor="@color/editor_blue"
+                app:tabTextColor="@color/editor_meta"
+                app:tabTextAppearance="@style/TextAppearance.FixLog.Tab">
+                <com.google.android.material.tabs.TabItem
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_shared_by_me" />
+                <com.google.android.material.tabs.TabItem
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_shared_with_me" />
+            </com.google.android.material.tabs.TabLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginHorizontal="16dp"
+                android:background="@color/editor_divider" />
+
+            <TextView
+                android:id="@+id/tv_shared_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:text="@string/settings_empty_list"
                 android:textColor="@color/editor_meta"
-                android:ellipsize="end"
-                android:maxLines="1" />
+                android:textSize="13sp"
+                android:gravity="center"
+                android:paddingVertical="20dp"
+                android:visibility="gone" />
+
+            <!-- 공유 리스트 로딩 중 skeleton(반짝임). 소유자 해석 후 실제 트리로 교체. -->
+            <LinearLayout
+                android:id="@+id/ll_shared_skeleton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <include layout="@layout/item_skeleton" />
+                <include layout="@layout/item_skeleton" />
+                <include layout="@layout/item_skeleton" />
+                <include layout="@layout/item_skeleton" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_shared"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:nestedScrollingEnabled="false" />
+
+            <!-- ============ 계정 섹션 ============ -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/settings_account"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/editor_meta" />
+
+            <!-- 계정 정보 카드 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:padding="16dp"
+                android:background="@drawable/bg_account_card">
+
+                <TextView
+                    android:id="@+id/tv_avatar"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:gravity="center"
+                    android:text="·"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_avatar_circle" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="14dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_user_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/editor_title"
+                        android:ellipsize="end"
+                        android:maxLines="1" />
+
+                    <TextView
+                        android:id="@+id/tv_user_email"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text=""
+                        android:textSize="13sp"
+                        android:textColor="@color/editor_meta"
+                        android:ellipsize="end"
+                        android:maxLines="1" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 로그아웃 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_logout"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/settings_logout"
+                app:icon="@drawable/ic_logout"
+                style="@style/Widget.FixLog.Button.Danger" />
+
         </LinearLayout>
-    </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <!-- 로그아웃 -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_logout"
+    <include
+        android:id="@+id/bottom_nav"
+        layout="@layout/view_bottom_nav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="로그아웃"
-        android:textSize="16sp"
-        app:cornerRadius="12dp"
-        app:backgroundTint="@color/white"
-        android:textColor="#DC2626"
-        app:strokeColor="#F1C7C7"
-        app:strokeWidth="1dp"
-        style="@style/Widget.Material3.Button.OutlinedButton" />
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp" />
 
-</LinearLayout>
+</FrameLayout>

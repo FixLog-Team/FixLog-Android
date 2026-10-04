@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 채팅방 목록 한 행: 제목(클릭 → 전환) + X(삭제). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:minHeight="48dp"
+    android:paddingStart="20dp"
+    android:paddingEnd="8dp">
+
+    <TextView
+        android:id="@+id/tv_conv_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:paddingVertical="12dp"
+        android:text="@string/conversation_title"
+        android:textSize="16sp"
+        android:textColor="@color/editor_title"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground" />
+
+    <ImageView
+        android:id="@+id/btn_conv_delete"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_close"
+        app:tint="@color/editor_meta"
+        android:contentDescription="@string/conversation_delete"
+        android:background="?attr/selectableItemBackgroundBorderless" />
+
+</LinearLayout>

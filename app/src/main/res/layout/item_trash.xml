@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="8dp"
+    android:paddingVertical="12dp">
+
+    <ImageView
+        android:id="@+id/iv_icon"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:src="@drawable/ic_file"
+        app:tint="@color/editor_meta"
+        android:contentDescription="@string/label_item" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/label_name"
+            android:textSize="15sp"
+            android:textColor="@color/editor_title"
+            android:ellipsize="end"
+            android:maxLines="1" />
+
+        <TextView
+            android:id="@+id/tv_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/trash_deleted_date"
+            android:textSize="12sp"
+            android:textColor="@color/editor_meta"
+            android:ellipsize="end"
+            android:maxLines="1" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/btn_restore"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="9dp"
+        android:src="@drawable/ic_import"
+        android:scaleType="fitCenter"
+        app:tint="@color/editor_blue"
+        android:contentDescription="@string/trash_restore"
+        android:background="?attr/selectableItemBackgroundBorderless" />
+
+    <ImageView
+        android:id="@+id/btn_purge"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="9dp"
+        android:src="@drawable/ic_trash"
+        android:scaleType="fitCenter"
+        app:tint="#DC2626"
+        android:contentDescription="@string/trash_delete_permanently"
+        android:background="?attr/selectableItemBackgroundBorderless" />
+
+</LinearLayout>

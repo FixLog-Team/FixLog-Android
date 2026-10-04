@@ -14,30 +14,37 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FixLog"
-        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
         <!--
-            로그인 화면. remote 서버가 지원하는 `/login/swag` 흐름을 앱 내 WebView로 처리하고
-            `/login/swag/callback` URL을 가로채 토큰을 받는다(구 myapp:// 딥링크 방식은 remote 미지원이라 제거).
+            로그인 화면. Google 권장 방식(RFC 8252): Custom Tabs(외부 브라우저)로 서버 로그인 시작 URL을 열고,
+            서버가 1회용 code를 딥링크(kr.co.fixlog://oauth2callback)로 돌려주면 code를 토큰으로 교환한다.
+            (docs/OAUTH_CUSTOM_TABS_전환.md 참고) singleTask + 딥링크 인텐트필터로 콜백을 onNewIntent로 받는다.
         -->
         <activity
             android:name=".activity.GoogleLoginActivity"
+            android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name=".activity.MainActivity"
-            android:exported="true">
+
+            <!-- OAuth 로그인 콜백 딥링크(서버 → 앱). 서버 redirect_uri 화이트리스트와 정확히 일치해야 함. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="kr.co.fixlog"
+                    android:host="oauth2callback" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".activity.EditorActivity"
-            android:exported="false" />
-        <activity
-            android:name=".activity.HomeActivity"
             android:exported="false" />
         <activity
             android:name=".activity.SearchActivity"
@@ -48,6 +55,9 @@
             android:exported="false" />
         <activity
             android:name=".activity.SettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.TrashActivity"
             android:exported="false" />
     </application>
 

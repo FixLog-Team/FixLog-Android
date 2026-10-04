@@ -1,6 +1,7 @@
 package kr.co.fixlog.activity
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,6 +17,7 @@ import androidx.core.widget.doAfterTextChanged
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -32,7 +34,6 @@ import kr.co.fixlog.data.remote.DocumentApi
 import kr.co.fixlog.data.remote.dto.DocumentDto
 import kr.co.fixlog.databinding.ActivityEditorBinding
 import kr.co.fixlog.model.SlashCommand
-import kr.co.fixlog.util.AllDialog
 import kr.co.fixlog.util.BottomNav
 import kr.co.fixlog.util.DocumentActionsHelper
 import kr.co.fixlog.util.toAiMessage
@@ -128,18 +129,49 @@ class EditorActivity : AppCompatActivity() {
     }
 
     /**
-     * 즐겨찾기(☆) 로컬 토글. 서버에 즐겨찾기 API가 없어 SharedPreferences로 문서별 상태를 저장한다.
-     * (추후 서버 API 생기면 이 부분만 교체)
+     * 즐겨찾기(☆) 토글. 서버(POST/DELETE /api/documents/{id}/favorite)와 동기화하며,
+     * 로컬(SharedPreferences)은 즉시 반응/오프라인 폴백을 위한 미러로 유지한다.
+     * 진입 시 서버 즐겨찾기 목록으로 상태를 보정한다.
      */
     private fun setupFavorite() {
         val fileId = intent.getStringExtra(EXTRA_FILE_ID) ?: return
-        renderFavorite(isFavorite(fileId))
-        binding.btnFavorite.setOnClickListener {
-            val next = !isFavorite(fileId)
-            getSharedPreferences(PREF_FAVORITES, MODE_PRIVATE)
-                .edit().putBoolean(fileId, next).apply()
-            renderFavorite(next)
+        var state = isFavorite(fileId)
+        renderFavorite(state)
+
+        // 서버 상태로 보정(실패 시 로컬 미러 유지).
+        lifecycleScope.launch {
+            runCatching { DocumentApi.getFavorites() }
+                .onSuccess { favs ->
+                    val serverFav = favs.any { it.documentId == fileId }
+                    if (serverFav != state) {
+                        state = serverFav
+                        setLocalFavorite(fileId, serverFav)
+                        renderFavorite(serverFav)
+                    }
+                }
         }
+
+        binding.btnFavorite.setOnClickListener {
+            val next = !state
+            state = next
+            setLocalFavorite(fileId, next) // 즉시 반영
+            renderFavorite(next)
+            lifecycleScope.launch {
+                runCatching {
+                    if (next) DocumentApi.addFavorite(fileId) else DocumentApi.removeFavorite(fileId)
+                }.onFailure { e ->
+                    Log.w(TAG, "즐겨찾기 변경 실패", e)
+                    state = !next // 롤백
+                    setLocalFavorite(fileId, state)
+                    renderFavorite(state)
+                    Toast.makeText(this@EditorActivity, getString(R.string.editor_favorite_change_failed), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun setLocalFavorite(fileId: String, on: Boolean) {
+        getSharedPreferences(PREF_FAVORITES, MODE_PRIVATE).edit().putBoolean(fileId, on).apply()
     }
 
     /**
@@ -154,11 +186,9 @@ class EditorActivity : AppCompatActivity() {
     }
 
     /**
-     * AI(✦) → 현재 문서를 요약해 바텀시트로 보여준다.
-     * POST /ai/documents/{documentId}/summarize 는 서버가 DB에서 문서 원문(plainText)을 조회해 요약하므로,
-     * 최신 본문을 저장(persistCurrent)해 문서ID를 확보한 뒤 그 ID로만 요약을 요청한다.
-     * (원문을 클라이언트가 직접 전송하지 않으며, 소유권 검증도 서버에서 자동 수행된다.
-     *  저장 시 saveContent 의 BlockNote→Editor.js 변환으로 서버 plainText 가 채워지는 것을 전제한다.)
+     * AI(✦) → 현재 본문(에디터에 보이는 그대로)을 요약해 바텀시트로 보여준다.
+     * 서버 DB의 저장본이 아니라 [getPlainText]로 읽은 현재 본문 평문을 POST /ai/summarize 로 직접 보낸다
+     * → 화면 내용과 요약이 항상 일치. "이어서 대화" 시 이 본문+요약을 컨텍스트로 검색 화면에 넘긴다.
      */
     private fun onAiClicked() {
         val view = layoutInflater.inflate(R.layout.sheet_ai_summary, null)
@@ -168,42 +198,158 @@ class EditorActivity : AppCompatActivity() {
         val loading = view.findViewById<android.view.View>(R.id.loading)
         val tvLoading = view.findViewById<TextView>(R.id.tv_loading)
         val tvSummary = view.findViewById<TextView>(R.id.tv_summary)
+        val btnContinue = view.findViewById<android.view.View>(R.id.btn_continue)
+        val btnSuggestLabels = view.findViewById<android.view.View>(R.id.btn_suggest_labels)
         view.findViewById<android.view.View>(R.id.btn_close).setOnClickListener { dialog.dismiss() }
 
-        // 저장 단계: circle indicator + "저장하는 중" 표시.
+        // 요약 완료(또는 실패) 전까지 "이어서 대화"/"라벨 추천"은 비활성.
+        btnContinue.isEnabled = false
+        btnSuggestLabels.isEnabled = false
+
+        // 이어서 대화/라벨 추천에 넘길 상태(본문/요약).
+        var bodyText = ""
+        var summaryText = ""
+        btnContinue.setOnClickListener {
+            dialog.dismiss()
+            openSearchWithContext(bodyText, summaryText)
+        }
+        btnSuggestLabels.setOnClickListener {
+            dialog.dismiss()
+            suggestLabels(bodyText)
+        }
+
         loading.visibility = android.view.View.VISIBLE
-        tvLoading.text = "문서를 저장하는 중…"
+        tvLoading.text = getString(R.string.editor_summarizing)
         dialog.show()
 
-        // 최신 본문 저장 → 확보된 문서ID로 요약 요청.
-        persistCurrent { savedId ->
-            if (savedId == null) {
+        // 현재 본문 평문을 읽어 요약한다.
+        binding.webView.evaluateJavascript("window.getPlainText ? window.getPlainText() : ''") { raw ->
+            val content = decodeJsString(raw).trim()
+            bodyText = content
+            if (content.isBlank()) {
                 loading.visibility = android.view.View.GONE
-                tvSummary.text = "먼저 문서 제목이나 내용을 작성해 주세요."
-                return@persistCurrent
+                tvSummary.text = getString(R.string.editor_summary_empty)
+                return@evaluateJavascript
             }
-            // 요약 단계: 라벨을 "요약하는 중"으로 전환.
-            tvLoading.text = "문서를 요약하는 중…"
             lifecycleScope.launch {
-                runCatching { AiApi.summarizeDocument(savedId) }
+                runCatching { AiApi.summarize(content) }
                     .onSuccess { summary ->
                         loading.visibility = android.view.View.GONE
+                        summaryText = summary
                         tvSummary.text = summary
+                        btnContinue.isEnabled = true
+                        btnSuggestLabels.isEnabled = true
                     }
                     .onFailure { e ->
                         Log.w(TAG, "AI 요약 실패: ${e::class.simpleName} ${e.message}")
                         loading.visibility = android.view.View.GONE
                         tvSummary.text = e.toAiMessage(this@EditorActivity)
+                        // 요약이 실패해도 본문 기반으로 이어서 대화/라벨 추천은 가능하게 한다.
+                        btnContinue.isEnabled = true
+                        btnSuggestLabels.isEnabled = true
                     }
             }
         }
+    }
+
+    /**
+     * 라벨 수정/추가 버튼(에디터 헤더) → 라벨 편집 다이얼로그.
+     * 저장되지 않은 새 문서면 먼저 저장해 id를 확보한 뒤 연다.
+     */
+    private fun onEditLabelsClicked() {
+        val existing = intent.getStringExtra(EXTRA_FILE_ID)
+        if (existing != null) {
+            openLabelEditor(existing)
+        } else {
+            persistCurrent { savedId ->
+                if (savedId == null) Toast.makeText(this, getString(R.string.editor_write_title_or_content_first), Toast.LENGTH_SHORT).show()
+                else openLabelEditor(savedId)
+            }
+        }
+    }
+
+    private fun openLabelEditor(documentId: String) {
+        kr.co.fixlog.util.LabelEditorHelper.show(this, lifecycleScope, documentId) {
+            // 변경 후 헤더 라벨 새로고침.
+            fetchAndInjectMeta()
+        }
+    }
+
+    /**
+     * AI 라벨 추천: 현재 본문으로 /ai/tags 호출 → 추천 태그를 다중 선택 → 선택한 태그를 라벨로 추가.
+     * 저장되지 않은 새 문서면 먼저 저장해 id를 확보한다.
+     */
+    private fun suggestLabels(bodyText: String) {
+        if (bodyText.isBlank()) {
+            Toast.makeText(this, getString(R.string.editor_write_content_first), Toast.LENGTH_SHORT).show()
+            return
+        }
+        lifecycleScope.launch {
+            val tags = runCatching { AiApi.suggestTags(bodyText) }.getOrElse {
+                Toast.makeText(this@EditorActivity, it.toAiMessage(this@EditorActivity), Toast.LENGTH_SHORT).show()
+                emptyList()
+            }
+            if (tags.isEmpty()) {
+                Toast.makeText(this@EditorActivity, getString(R.string.editor_no_suggested_labels), Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val checked = BooleanArray(tags.size)
+            AlertDialog.Builder(this@EditorActivity)
+                .setTitle(getString(R.string.editor_suggested_labels))
+                .setMultiChoiceItems(tags.toTypedArray(), checked) { _, which, isChecked -> checked[which] = isChecked }
+                .setNegativeButton(getString(R.string.common_cancel), null)
+                .setPositiveButton(getString(R.string.common_add)) { _, _ ->
+                    val selected = tags.filterIndexed { i, _ -> checked[i] }
+                    if (selected.isEmpty()) return@setPositiveButton
+                    addLabels(selected)
+                }
+                .show()
+        }
+    }
+
+    /** 선택한 라벨들을 문서에 추가(필요 시 먼저 저장) 후 헤더 새로고침. */
+    private fun addLabels(labels: List<String>) {
+        val existing = intent.getStringExtra(EXTRA_FILE_ID)
+        if (existing != null) {
+            doAddLabels(existing, labels)
+        } else {
+            persistCurrent { savedId ->
+                if (savedId == null) Toast.makeText(this, getString(R.string.editor_save_document_first), Toast.LENGTH_SHORT).show()
+                else doAddLabels(savedId, labels)
+            }
+        }
+    }
+
+    private fun doAddLabels(documentId: String, labels: List<String>) {
+        lifecycleScope.launch {
+            labels.forEach { runCatching { DocumentApi.addLabel(documentId, it) } }
+            Toast.makeText(this@EditorActivity, getString(R.string.editor_labels_added), Toast.LENGTH_SHORT).show()
+            fetchAndInjectMeta()
+        }
+    }
+
+    /** 현재 문서(본문+요약)를 컨텍스트로 검색 화면을 열어 이어서 질문하게 한다. */
+    private fun openSearchWithContext(body: String, summary: String) {
+        val title = binding.tvTitle.text?.toString()?.trim().orEmpty()
+        startActivity(Intent(this, SearchActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            putExtra(SearchActivity.EXTRA_CONTEXT_TITLE, title)
+            putExtra(SearchActivity.EXTRA_CONTEXT_BODY, body)
+            putExtra(SearchActivity.EXTRA_CONTEXT_SUMMARY, summary)
+        })
+    }
+
+    /** evaluateJavascript가 돌려주는 JSON 인코딩 문자열("...")을 실제 문자열로 디코드. */
+    private fun decodeJsString(raw: String?): String {
+        if (raw.isNullOrBlank() || raw == "null") return ""
+        return runCatching { org.json.JSONTokener(raw).nextValue() as? String }.getOrNull() ?: raw
     }
 
     /** 더보기(…) → 문서 액션 메뉴. 새 문서(id 없음)는 저장 전이라 안내만 한다. */
     private fun showMoreMenu() {
         val id = intent.getStringExtra(EXTRA_FILE_ID)
         if (id == null) {
-            Toast.makeText(this, "문서를 저장한 뒤 사용할 수 있어요", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.editor_available_after_save), Toast.LENGTH_SHORT).show()
             return
         }
         val title = binding.tvTitle.text?.toString()?.ifBlank { "Untitled" } ?: "Untitled"
@@ -220,7 +366,9 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun setupWebView() {
-        android.webkit.WebView.setWebContentsDebuggingEnabled(true)
+        // 원격 WebView 디버깅(chrome://inspect)은 디버그 빌드에서만 허용. 운영 빌드에선
+        // 문서 본문 등 WebView 내부가 외부 도구로 노출되지 않도록 끈다.
+        android.webkit.WebView.setWebContentsDebuggingEnabled(kr.co.fixlog.BuildConfig.DEBUG)
         binding.webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -229,6 +377,9 @@ class EditorActivity : AppCompatActivity() {
         binding.webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                // 앱 로케일을 에디터(WebView)에 전달해 슬래시 메뉴/플레이스홀더 등을 해당 언어로 표시.
+                val lang = resources.configuration.locales[0].language
+                view?.evaluateJavascript("window.setLang && window.setLang('$lang');", null)
                 // 우선 상단바 제목을 본문 헤더에 즉시 주입(네트워크와 무관하게 항상 보이게).
                 val title = binding.tvTitle.text?.toString().orEmpty()
                 val safe = title.replace("\\", "\\\\").replace("'", "\\'")
@@ -243,7 +394,8 @@ class EditorActivity : AppCompatActivity() {
         binding.webView.addJavascriptInterface(
             EditorBridge(
                 onSlash = { json -> runOnUiThread { handleSlashState(json) } },
-                onTitle = { title -> runOnUiThread { applyTitleFromWeb(title) } }
+                onTitle = { title -> runOnUiThread { applyTitleFromWeb(title) } },
+                onEditLabels = { runOnUiThread { onEditLabelsClicked() } }
             ),
             BRIDGE_NAME
         )
@@ -261,13 +413,10 @@ class EditorActivity : AppCompatActivity() {
         syncingTitleFromWeb = false
     }
 
-    /**
-     * 하단 네비게이션 클릭 연결(1차). 홈/문서는 문서 목록(MainActivity)으로 복귀,
-     * 검색/챗은 아직 미구현이라 안내 토스트. (전역 내비 정식 구조는 후속 작업)
-     */
+    /** 하단 네비게이션 배선. 에디터는 "문서" 탭의 하위 상세 화면이다. */
     private fun setupBottomNav() {
-        // 에디터 = "작성"(/editor) 탭. 공용 네비 헬퍼로 탭 전환/활성강조 처리.
-        BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.WRITE) { AllDialog.show(this) }
+        // 에디터는 문서 탭의 하위 상세 화면이므로 "문서" 탭을 활성 상태로 표시한다.
+        BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.DOCS)
     }
 
     /**
@@ -279,7 +428,9 @@ class EditorActivity : AppCompatActivity() {
         launchWithLoading {
             runCatching { DocumentApi.getDocument(fileId) }
                 .onSuccess { dto ->
-                    injectMeta(dto)
+                    // 라벨은 별도 엔드포인트라 함께 조회해 헤더에 표시(실패해도 본문/메타는 정상).
+                    val labels = runCatching { DocumentApi.getLabels(fileId) }.getOrDefault(emptyList())
+                    injectMeta(dto, labels)
                     injectContent(dto)
                 }
                 .onFailure { e -> Log.d(TAG, "문서 조회 실패(무시): ${e.message}") }
@@ -296,13 +447,15 @@ class EditorActivity : AppCompatActivity() {
         )
     }
 
-    private fun injectMeta(dto: DocumentDto) {
-        val author = dto.updateUser ?: dto.createUser
+    private fun injectMeta(dto: DocumentDto, labels: List<String> = emptyList()) {
+        // 소유자(작성자) 이름 우선: 상세 응답의 createUserName → 없으면 식별자 폴백.
+        val author = dto.createUserName ?: dto.createUser ?: dto.updateUser
         val updatedRaw = dto.updateTime ?: dto.createTime
         val meta = JSONObject().apply {
             put("title", dto.title)
             if (!author.isNullOrBlank()) put("author", author)
             formatUpdated(updatedRaw)?.let { put("updated", it) }
+            if (labels.isNotEmpty()) put("tags", org.json.JSONArray(labels))
         }
         // JSON 문자열을 JS 문자열 인자로 안전하게 전달(작은따옴표/역슬래시 이스케이프).
         val arg = meta.toString().replace("\\", "\\\\").replace("'", "\\'")
@@ -312,12 +465,13 @@ class EditorActivity : AppCompatActivity() {
         )
     }
 
-    /** ISO-8601(예: 2026-05-19T12:34:56.789Z) → "Updated May 19, 2026". 파싱 실패 시 null. */
+    /** ISO-8601(예: 2026-05-19T12:34:56.789Z) → "2026년 5월 19일 수정". 파싱 실패 시 null. */
     private fun formatUpdated(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
         return runCatching {
             val dt = OffsetDateTime.parse(raw)
-            "Updated " + dt.format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH))
+            val formatted = dt.format(DateTimeFormatter.ofPattern(getString(R.string.editor_date_pattern), Locale.KOREAN))
+            getString(R.string.editor_updated, formatted)
         }.getOrNull()
     }
 
@@ -444,7 +598,7 @@ class EditorActivity : AppCompatActivity() {
                     }
                 }.onFailure { e ->
                     Log.w(TAG, "저장 실패: ${e.message}")
-                    Toast.makeText(this@EditorActivity, "저장에 실패했습니다", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@EditorActivity, getString(R.string.editor_save_failed), Toast.LENGTH_SHORT).show()
                 }.getOrDefault(existingId)
                 onSaved(savedId)
             }

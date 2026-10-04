@@ -5,5 +5,20 @@
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
 
-    <style name="Theme.FixLog" parent="Base.Theme.FixLog" />
+    <style name="Theme.FixLog" parent="Base.Theme.FixLog">
+        <!-- 모든 팝업(AlertDialog)을 앱 UI(둥근 모서리·파란 버튼·흰 배경)로 통일. -->
+        <item name="alertDialogTheme">@style/ThemeOverlay.FixLog.Dialog</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.FixLog.Dialog</item>
+    </style>
+
+    <!--
+        공용 다이얼로그 테마: editor_blue 강조, 흰 배경, 둥근 모서리.
+        코드가 androidx.appcompat.app.AlertDialog 를 쓰므로 appcompat 호환 M3 Dialog.Alert 기반으로 둔다.
+    -->
+    <style name="ThemeOverlay.FixLog.Dialog" parent="ThemeOverlay.Material3.Dialog.Alert">
+        <item name="colorPrimary">@color/editor_blue</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="android:colorBackground">@color/white</item>
+        <item name="dialogCornerRadius">20dp</item>
+    </style>
 </resources>

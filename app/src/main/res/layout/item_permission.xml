@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 공유 대상 한 행: 이름 + 허용 배지 + 회수(X). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/tv_principal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/permission_user"
+        android:textSize="14sp"
+        android:textColor="@color/editor_title"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/tv_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:text="@string/permission_allowed"
+        android:textSize="11sp"
+        android:textColor="@color/published_text"
+        android:background="@drawable/bg_badge_published" />
+
+    <ImageView
+        android:id="@+id/btn_revoke"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="4dp"
+        android:padding="7dp"
+        android:src="@drawable/ic_close"
+        app:tint="@color/editor_meta"
+        android:contentDescription="@string/permission_revoke"
+        android:background="?attr/selectableItemBackgroundBorderless" />
+
+</LinearLayout>

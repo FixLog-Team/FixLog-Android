@@ -10,7 +10,7 @@ import kr.co.fixlog.model.FileType
 /**
  * 폴더 트리 네비게이션 상태 관리 + 서버 폴더 API 조회.
  *
- * - 이전엔 SampleDataRepository의 in-memory 트리를 사용했으나, 서버 `/api/folders` 계열 API로 교체
+ * - 서버 `/api/folders` 계열 API로 폴더/문서 트리를 조회한다
  * - 네트워크 호출은 [scope] 위에서 launch되어 UI 스레드를 막지 않음
  * - 성공 시 onNavigationChanged, 실패 시 onError 콜백으로 알림
  * - 서버는 인증된 사용자 기준으로 소유 폴더를 판단한다(workspace 개념 없음).
@@ -69,6 +69,9 @@ class FolderNavigationHelper(
     /** 현재 경로의 폴더 이름 목록(루트 제외). breadcrumb 렌더링에 사용. */
     fun pathNames(): List<String> = pathStack.map { it.name }
 
+    /** 현재 경로의 폴더 id 목록(루트 제외). 접근 범위(shared scope) 판단에 사용. */
+    fun pathIds(): List<String> = pathStack.map { it.id }
+
     /**
      * 경로의 특정 깊이로 이동한다(breadcrumb 클릭용).
      * @param depth 0이면 루트, k이면 앞에서부터 k개 폴더까지 유지하고 그 위치를 연다.
@@ -112,7 +115,10 @@ class FolderNavigationHelper(
                 name = it.folderName,
                 type = FileType.FOLDER,
                 date = it.updateTime?.take(10).orEmpty(),
-                parentId = parentId
+                parentId = parentId,
+                // 웹과 동일하게 소유자=생성자(createUser). 이름 해석은 목록 화면에서 수행.
+                owner = it.createUser,
+                createUser = it.createUser
             )
         }
         val documents = contents.documents.map {
@@ -121,7 +127,10 @@ class FolderNavigationHelper(
                 name = it.title,
                 type = FileType.FILE,
                 date = it.updateTime?.take(10).orEmpty(),
-                parentId = parentId
+                parentId = parentId,
+                owner = it.createUserName ?: it.createUser,
+                createUser = it.createUser,
+                labels = it.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty()
             )
         }
         return folders + documents

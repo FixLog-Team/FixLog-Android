@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 탭 선택 인디케이터: 둥근 막대(색은 app:tabIndicatorColor로 틴트). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="3dp" />
+    <size android:height="3dp" />
+    <solid android:color="@color/editor_blue" />
+</shape>

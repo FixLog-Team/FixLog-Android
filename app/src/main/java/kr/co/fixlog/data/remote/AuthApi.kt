@@ -14,6 +14,7 @@ import java.io.IOException
  *
  * 서버 API 매핑(auth-controller):
  *   POST /auth/token/refresh → [refresh]
+ *   POST /auth/exchange      → [exchange]  (Custom Tabs 로그인의 1회용 code → 토큰 교환)
  *   GET  /auth/token         → [session]
  *
  * 주의: 두 엔드포인트 모두 Swagger에 요청/응답 스키마가 구체적으로 노출되어 있지 않다.
@@ -50,6 +51,33 @@ object AuthApi {
         val result = obj.optJSONObject("result") ?: obj
         val access = result.optString("accessToken").ifBlank { result.optString("token") }
         if (access.isBlank()) throw IOException("refresh succeeded but no accessToken in body: $body")
+        val refresh = result.optString("refreshToken").ifBlank { null }
+        TokenResponse(accessToken = access, refreshToken = refresh)
+    }
+
+    /**
+     * Custom Tabs 로그인 콜백으로 받은 1회용 code를 서버 JWT(access/refresh)로 교환한다.
+     * POST /auth/exchange { code }. result(또는 최상위)에서 accessToken/refreshToken을 파싱한다.
+     * (딥링크에 토큰을 싣지 않기 위한 권장 방식 — OAUTH_CUSTOM_TABS_전환.md 참고)
+     */
+    suspend fun exchange(code: String): TokenResponse = withContext(Dispatchers.IO) {
+        val payload = JSONObject().put("code", code).toString()
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}/auth/exchange")
+            .post(payload.toRequestBody(JSON))
+            .build()
+
+        val response = ApiClient.httpClient.newCall(request).execute()
+        val body = response.use { it.body?.string() }
+            ?: throw IOException("Empty response body")
+        val obj = JSONObject(body)
+        val respCode = obj.optString("code")
+        if (respCode.isNotEmpty() && respCode != "SUCCESS") {
+            throw IOException("API error: code=$respCode, message=${obj.optString("message")}")
+        }
+        val result = obj.optJSONObject("result") ?: obj
+        val access = result.optString("accessToken").ifBlank { result.optString("token") }
+        if (access.isBlank()) throw IOException("exchange succeeded but no accessToken in body")
         val refresh = result.optString("refreshToken").ifBlank { null }
         TokenResponse(accessToken = access, refreshToken = refresh)
     }

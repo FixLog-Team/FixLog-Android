@@ -68,6 +68,23 @@ object AiApi {
     }
 
     /**
+     * 본문 기반 라벨(태그) 추천. POST /ai/tags { content } → 문자열 배열.
+     */
+    suspend fun suggestTags(content: String): List<String> = withContext(Dispatchers.IO) {
+        val payload = JSONObject().put("content", content).toString()
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}/ai/tags")
+            .post(payload.toRequestBody(JSON))
+            .build()
+        val body = runAiCall(request)
+        val obj = try { JSONObject(body) } catch (e: Exception) { throw AiException.Server(null, null) }
+        val code = obj.optString("code")
+        if (code.isNotEmpty() && code != "SUCCESS") throw businessCodeToAiException(code, obj.optString("message"))
+        val arr = obj.optJSONArray("result") ?: return@withContext emptyList()
+        (0 until arr.length()).mapNotNull { arr.optString(it).takeIf { s -> s.isNotBlank() } }
+    }
+
+    /**
      * AI 요청을 실행하고 2xx면 원문 body를 반환한다.
      * 전송 오류/비정상 HTTP 상태는 사유별 [AiException]으로 변환해 던진다.
      */

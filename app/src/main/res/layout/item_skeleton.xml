@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- skeleton 한 행: 아이콘 자리(원형) + 제목/메타 자리(막대 2개). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingVertical="16dp">
+
+    <View
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:background="@drawable/bg_skeleton" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="14dp"
+            android:background="@drawable/bg_skeleton" />
+
+        <View
+            android:layout_width="140dp"
+            android:layout_height="11dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_skeleton" />
+    </LinearLayout>
+
+</LinearLayout>

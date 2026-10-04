@@ -75,6 +75,47 @@ object DocumentApi {
     }
 
     /**
+     * 문서 메타만 필요할 때 쓰는 경량 조회. 상세 조회(GET /api/documents/{id})를 그대로 쓰되
+     * 본문(blocks) 포맷 변환을 생략한다(목록 보강용 — 제목/작성자명/수정일만 사용).
+     * 상세 응답에는 목록에 없는 createUserName 이 포함된다(§6).
+     */
+    suspend fun getMeta(documentId: String): DocumentDto {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId")
+            .get()
+            .build()
+        return execute(request, DocumentDto::class.java)
+    }
+
+    /**
+     * 문서 라벨(태그) 목록. GET /api/documents/{id}/labels.
+     * 응답 result 스키마가 확정적이지 않아(문자열 배열 또는 {labelId,labelName} 객체 배열)
+     * 유연하게 파싱해 라벨명 리스트로 반환한다. 실패/없음이면 빈 리스트.
+     */
+    suspend fun getLabels(documentId: String): List<String> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId/labels")
+            .get()
+            .build()
+        val response = ApiClient.httpClient.newCall(request).execute()
+        val body = response.use { it.body?.string() }.orEmpty()
+        if (body.isBlank()) return@withContext emptyList()
+        val obj = runCatching { JSONObject(body) }.getOrNull() ?: return@withContext emptyList()
+        val code = obj.optString("code")
+        if (code.isNotEmpty() && code != "SUCCESS") return@withContext emptyList()
+        if (obj.isNull("result")) return@withContext emptyList()
+        val arr = obj.optJSONArray("result") ?: return@withContext emptyList()
+        (0 until arr.length()).mapNotNull { i ->
+            when (val el = arr.opt(i)) {
+                is String -> el.takeIf { it.isNotBlank() }
+                is JSONObject -> (el.optString("labelName").ifBlank { el.optString("name") })
+                    .takeIf { it.isNotBlank() }
+                else -> null
+            }
+        }
+    }
+
+    /**
      * 문서 제목 + 본문(blocks) 저장.
      * @param blocksJson BlockNote가 내보낸 블록 트리 JSON 문자열(배열 또는 객체). 그대로 서버에 전달된다.
      */
@@ -90,6 +131,92 @@ object DocumentApi {
             .put(payload.toRequestBody(JSON))
             .build()
         return execute(request, DocumentDto::class.java)
+    }
+
+    /**
+     * 즐겨찾기(고정) 문서 목록. GET /api/documents/favorites.
+     * result가 배열이거나 {items:[...]} 페이지 객체 어느 쪽이든 대응한다.
+     */
+    suspend fun getFavorites(): List<DocumentDto> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/favorites")
+            .get()
+            .build()
+        val response = ApiClient.httpClient.newCall(request).execute()
+        val body = response.use { it.body?.string() }.orEmpty()
+        if (body.isBlank()) return@withContext emptyList()
+        val obj = runCatching { JSONObject(body) }.getOrNull() ?: return@withContext emptyList()
+        val code = obj.optString("code")
+        if (code.isNotEmpty() && code != "SUCCESS") return@withContext emptyList()
+        if (obj.isNull("result")) return@withContext emptyList()
+        val arr = obj.optJSONArray("result")
+            ?: obj.optJSONObject("result")?.optJSONArray("items")
+            ?: return@withContext emptyList()
+        val adapter = ApiClient.moshi.adapter(DocumentDto::class.java)
+        (0 until arr.length()).mapNotNull { idx ->
+            val o = arr.optJSONObject(idx) ?: return@mapNotNull null
+            runCatching { adapter.fromJson(o.toString()) }.getOrNull()
+        }
+    }
+
+    /** 문서 라벨(태그) 목록 — id 포함(삭제용). GET /api/documents/{id}/labels. */
+    suspend fun getLabelsFull(documentId: String): List<kr.co.fixlog.data.remote.dto.LabelDto> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId/labels").get().build()
+        val response = ApiClient.httpClient.newCall(request).execute()
+        val body = response.use { it.body?.string() }.orEmpty()
+        if (body.isBlank()) return@withContext emptyList()
+        val obj = runCatching { JSONObject(body) }.getOrNull() ?: return@withContext emptyList()
+        if (obj.optString("code").let { it.isNotEmpty() && it != "SUCCESS" }) return@withContext emptyList()
+        val arr = obj.optJSONArray("result") ?: return@withContext emptyList()
+        (0 until arr.length()).mapNotNull { i ->
+            when (val el = arr.opt(i)) {
+                is String -> el.takeIf { it.isNotBlank() }?.let { kr.co.fixlog.data.remote.dto.LabelDto(it, it) }
+                is JSONObject -> {
+                    val name = el.optString("labelName").ifBlank { el.optString("name") }
+                    val lid = el.optString("labelId").ifBlank { el.optString("id").ifBlank { name } }
+                    name.takeIf { it.isNotBlank() }?.let { kr.co.fixlog.data.remote.dto.LabelDto(lid, name) }
+                }
+                else -> null
+            }
+        }
+    }
+
+    /** 라벨 추가(없으면 생성). POST /api/documents/{id}/labels { labelName }. */
+    suspend fun addLabel(documentId: String, labelName: String) {
+        val payload = JSONObject().put("labelName", labelName).toString()
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId/labels")
+            .post(payload.toRequestBody(JSON))
+            .build()
+        executeUnit(request)
+    }
+
+    /** 라벨 삭제. DELETE /api/documents/{id}/labels/{labelId}. */
+    suspend fun removeLabel(documentId: String, labelId: String) {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId/labels/$labelId")
+            .delete()
+            .build()
+        executeUnit(request)
+    }
+
+    /** 즐겨찾기 추가. POST /api/documents/{id}/favorite. */
+    suspend fun addFavorite(documentId: String) {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId/favorite")
+            .post(ByteArray(0).toRequestBody(null))
+            .build()
+        executeUnit(request)
+    }
+
+    /** 즐겨찾기 해제. DELETE /api/documents/{id}/favorite. */
+    suspend fun removeFavorite(documentId: String) {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId/favorite")
+            .delete()
+            .build()
+        executeUnit(request)
     }
 
     /** 문서 삭제. */

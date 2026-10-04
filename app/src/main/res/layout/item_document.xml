@@ -4,65 +4,81 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingVertical="14dp"
-    android:paddingHorizontal="16dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="4dp"
     android:background="?attr/selectableItemBackground">
 
-    <!-- Left icon guideline -->
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guide_icon_end"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_begin="56dp" />
-
-    <!-- Folder/file icon -->
+    <!-- 폴더/문서 아이콘 -->
     <ImageView
         android:id="@+id/iv_icon"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
         android:src="@drawable/ic_folder"
-        android:contentDescription="Item icon"
+        android:contentDescription="@string/item_icon"
+        app:tint="@color/editor_blue"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- Item name -->
+    <!-- 이름 -->
     <TextView
         android:id="@+id/tv_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Item Name"
+        android:text="@string/label_name"
         android:textSize="16sp"
-        android:textColor="#333333"
+        android:textColor="@color/editor_title"
         android:ellipsize="end"
         android:maxLines="1"
-        app:layout_constraintStart_toStartOf="@id/guide_icon_end"
-        app:layout_constraintEnd_toStartOf="@id/iv_arrow"
+        app:layout_constraintStart_toEndOf="@id/iv_icon"
+        app:layout_constraintEnd_toStartOf="@id/btn_more"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/tv_date"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintBottom_toTopOf="@id/ll_labels"
+        android:layout_marginStart="12dp" />
 
-    <!-- Date text -->
-    <TextView
-        android:id="@+id/tv_date"
+    <!-- 라벨(태그) 행: 어댑터가 칩을 동적으로 채운다. 없으면 GONE. -->
+    <LinearLayout
+        android:id="@+id/ll_labels"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="2026. 4. 6."
-        android:textSize="12sp"
-        android:textColor="#999999"
-        android:layout_marginTop="2dp"
-        app:layout_constraintStart_toStartOf="@id/guide_icon_end"
-        app:layout_constraintEnd_toStartOf="@id/iv_arrow"
+        android:orientation="horizontal"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="3dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toEndOf="@id/iv_icon"
+        app:layout_constraintEnd_toStartOf="@id/btn_more"
         app:layout_constraintTop_toBottomOf="@id/tv_name"
+        app:layout_constraintBottom_toTopOf="@id/tv_meta" />
+
+    <!-- 메타: 소유자 · 수정일 -->
+    <TextView
+        android:id="@+id/tv_meta"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/doc_meta_sample"
+        android:textSize="12sp"
+        android:textColor="@color/editor_meta"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="2dp"
+        app:layout_constraintStart_toEndOf="@id/iv_icon"
+        app:layout_constraintEnd_toStartOf="@id/btn_more"
+        app:layout_constraintTop_toBottomOf="@id/ll_labels"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- Right arrow (visible only for folders) -->
+    <!-- 더보기 버튼 -->
     <ImageView
-        android:id="@+id/iv_arrow"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@drawable/ic_arrow_right"
-        android:contentDescription="Navigate"
+        android:id="@+id/btn_more"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_more_horiz"
+        android:scaleType="fitCenter"
+        android:contentDescription="@string/common_more"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:tint="@color/editor_meta"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />

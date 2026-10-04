@@ -5,14 +5,60 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/editor_bg"
     tools:context=".activity.GoogleLoginActivity">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_login"
+    <!-- 앱 브랜드 -->
+    <TextView
+        android:id="@+id/tv_brand"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/google_sign_in"
+        android:text="@string/app_name"
+        android:textSize="40sp"
+        android:textStyle="bold"
+        android:textColor="@color/editor_blue"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tv_tagline"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/tv_tagline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/login_tagline"
+        android:textSize="15sp"
+        android:textColor="@color/editor_meta"
+        app:layout_constraintTop_toBottomOf="@id/tv_brand"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <!-- 권장(브랜드) Google 로그인 버튼: 흰 배경 / 회색 테두리 / G 로고 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_login"
+        android:layout_width="0dp"
+        android:layout_height="52dp"
+        android:layout_marginHorizontal="40dp"
+        android:layout_marginBottom="48dp"
+        android:text="@string/google_sign_in"
+        android:textColor="#1F1F1F"
+        android:textSize="15sp"
+        android:letterSpacing="0"
+        android:textAllCaps="false"
+        app:icon="@drawable/ic_google_g"
+        app:iconSize="20dp"
+        app:iconGravity="textStart"
+        app:iconPadding="12dp"
+        app:iconTint="@null"
+        app:backgroundTint="@color/white"
+        app:cornerRadius="8dp"
+        app:strokeColor="#747775"
+        app:strokeWidth="1dp"
+        app:rippleColor="#1F1F1F1A"
+        style="@style/Widget.Material3.Button.OutlinedButton"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent" />

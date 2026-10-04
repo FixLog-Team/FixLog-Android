@@ -72,7 +72,7 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_more_horiz"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="더보기" />
+                android:contentDescription="@string/common_more" />
         </LinearLayout>
 
         <View

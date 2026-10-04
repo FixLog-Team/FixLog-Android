@@ -46,6 +46,7 @@ object SessionManager {
             return
         }
         TokenManager.clear(ctx)
+        WorkspaceManager.clear(ctx)
 
         if (!redirecting.compareAndSet(false, true)) {
             Log.d(TAG, "이미 로그인 화면으로 이동 중 → 중복 실행 방지")

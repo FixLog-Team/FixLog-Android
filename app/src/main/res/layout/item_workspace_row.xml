@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 워크스페이스 전환 팝업의 한 행: 이름(좌) + role(우) + 현재 선택 체크. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingHorizontal="20dp"
+    android:paddingVertical="14dp"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/iv_check"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_marginEnd="10dp"
+        android:src="@drawable/ic_arrow_right"
+        android:visibility="invisible"
+        app:tint="@color/editor_blue"
+        android:contentDescription="@string/workspace_current_selected" />
+
+    <TextView
+        android:id="@+id/tv_ws_row_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/workspace"
+        android:textSize="16sp"
+        android:textColor="@color/editor_title"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/tv_ws_row_role"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="3dp"
+        android:text="@string/workspace_members"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="@color/editor_blue"
+        android:background="@drawable/bg_chip" />
+
+</LinearLayout>

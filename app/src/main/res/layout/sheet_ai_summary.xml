@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="AI 요약"
+            android:text="@string/ai_summary_title"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@color/editor_title" />
@@ -60,7 +60,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="문서를 요약하는 중…"
+            android:text="@string/ai_summary_loading"
             android:textSize="14sp"
             android:textColor="@color/editor_meta" />
     </LinearLayout>
@@ -88,7 +88,38 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="닫기"
+        android:text="@string/common_close"
+        app:cornerRadius="12dp"
+        style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    <!-- 라벨 추천: 현재 본문으로 AI 추천 태그를 받아 라벨로 추가 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_suggest_labels"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/ai_summary_recommend_labels"
+        app:icon="@drawable/ic_sparkle"
+        app:iconGravity="textStart"
+        app:cornerRadius="12dp"
+        android:textColor="@color/editor_blue"
+        app:iconTint="@color/editor_blue"
+        app:strokeColor="@color/ai_banner_border"
+        app:strokeWidth="1dp"
+        style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    <!-- 이어서 대화: 현재 문서(본문+요약)를 컨텍스트로 검색 화면에서 이어 질문 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_continue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/ai_summary_continue_chat"
+        android:textColor="@color/white"
+        app:icon="@drawable/ic_chat"
+        app:iconGravity="textStart"
+        app:iconTint="@color/white"
+        app:backgroundTint="@color/editor_blue"
         app:cornerRadius="12dp" />
 
 </LinearLayout>

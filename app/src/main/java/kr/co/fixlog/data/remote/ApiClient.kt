@@ -1,6 +1,7 @@
 package kr.co.fixlog.data.remote
 
 import android.content.Context
+import kr.co.fixlog.BuildConfig
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -22,7 +23,8 @@ object ApiClient {
     //  - 운영(HTTPS): "https://fixlog.art/fixlog"
     //  - 실기기 + 같은 Wi-Fi (LAN) 로컬: "http://<PC LAN IP>:8080/fixlog"
     //  BuildConfig.buildConfigField 또는 build flavor(prod/dev)로 분리 권장.
-    const val BASE_URL = "http://localhost:8080/fixlog"
+    //  현재: 실제 운영 remote 서버(HTTPS)를 사용한다.
+    const val BASE_URL = "https://fixlog.art/fixlog"
 
     @Volatile
     private var appContext: Context? = null
@@ -45,8 +47,13 @@ object ApiClient {
             // 401(accessToken 만료) 시 refreshToken으로 재발급 후 자동 재시도.
             .authenticator(TokenAuthenticator(ctx))
             .addInterceptor(HttpLoggingInterceptor().apply {
-                // TODO: 운영 빌드에선 BuildConfig.DEBUG 가드로 NONE 또는 BASIC으로 낮출 것.
-                level = HttpLoggingInterceptor.Level.BODY
+                // 디버그 빌드에서만 본문 전체를 로깅한다. 운영 빌드에선 토큰/문서 본문이
+                // logcat에 노출되지 않도록 로깅을 끈다.
+                level = if (BuildConfig.DEBUG) {
+                    HttpLoggingInterceptor.Level.BODY
+                } else {
+                    HttpLoggingInterceptor.Level.NONE
+                }
             })
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
