@@ -20,6 +20,9 @@
     <color name="published_text">#16A34A</color>
     <color name="published_bg">#E7F7EE</color>
 
+    <!-- 표면(카드/시트/네비/입력 배경). 라이트=흰색, 다크=values-night에서 오버라이드 -->
+    <color name="surface">#FFFFFF</color>
+
     <!-- 새 페이지(홈/검색/문서) 추가 팔레트 -->
     <color name="review_text">#B45309</color>
     <color name="review_bg">#FEF3C7</color>

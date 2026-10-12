@@ -77,8 +77,24 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnAddWs.setOnClickListener { showAddWorkspaceDialog() }
         binding.btnLeaveWs.setOnClickListener { confirmLeaveOrDelete() }
 
+        setupThemeTabs()
         setupSharedTabs()
         loadAccount()
+    }
+
+    /** 테마 탭(시스템/라이트/다크) 배선. 현재 설정을 선택 상태로 반영하고, 변경 시 즉시 적용한다. */
+    private fun setupThemeTabs() {
+        val current = kr.co.fixlog.util.ThemeManager.getMode(this) // 0=시스템,1=라이트,2=다크 = 탭 index
+        binding.tabTheme.getTabAt(current)?.select()
+        binding.tabTheme.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                if (tab.position == kr.co.fixlog.util.ThemeManager.getMode(this@SettingsActivity)) return
+                kr.co.fixlog.util.ThemeManager.setMode(this@SettingsActivity, tab.position)
+                // setDefaultNightMode가 활성 액티비티들을 자동 recreate 하여 즉시 반영된다.
+            }
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
     }
 
     override fun onResume() {

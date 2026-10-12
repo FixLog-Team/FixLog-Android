@@ -3,6 +3,7 @@ package kr.co.fixlog
 import android.app.Application
 import kr.co.fixlog.data.remote.ApiClient
 import kr.co.fixlog.util.SessionManager
+import kr.co.fixlog.util.ThemeManager
 
 /**
  * 앱 단위 초기화 진입점. AndroidManifest의 application 태그에 android:name=".FixLogApp"으로 등록.
@@ -16,5 +17,7 @@ class FixLogApp : Application() {
         super.onCreate()
         ApiClient.init(this)
         SessionManager.init(this)
+        // 저장된 다크/라이트 테마를 앱 시작 시 적용.
+        ThemeManager.apply(this)
     }
 }

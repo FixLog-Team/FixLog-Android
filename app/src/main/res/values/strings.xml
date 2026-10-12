@@ -234,4 +234,8 @@
     <string name="share_no_export_suffix"> · 반출금지</string>
     <string name="tree_delete_folder_extra">\n하위 폴더와 문서도 함께 휴지통으로 이동됩니다.</string>
     <string name="tree_delete_confirm">\'%1\$s\'을(를) 삭제할까요?%2\$s\n\n휴지통으로 이동되며, 휴지통은 웹에서 확인·복원할 수 있어요.</string>
+    <string name="settings_theme">테마</string>
+    <string name="settings_theme_system">시스템</string>
+    <string name="settings_theme_light">라이트</string>
+    <string name="settings_theme_dark">다크</string>
 </resources>

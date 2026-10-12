@@ -17,8 +17,8 @@
     -->
     <style name="ThemeOverlay.FixLog.Dialog" parent="ThemeOverlay.Material3.Dialog.Alert">
         <item name="colorPrimary">@color/editor_blue</item>
-        <item name="colorSurface">@color/white</item>
-        <item name="android:colorBackground">@color/white</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:colorBackground">@color/surface</item>
         <item name="dialogCornerRadius">20dp</item>
     </style>
 </resources>

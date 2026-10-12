@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    다크 테마 팔레트. values/colors.xml 의 named color 를 같은 이름으로 오버라이드한다.
+    (레이아웃/드로어블은 named color 를 참조하므로 코드 수정 없이 다크에 대응된다)
+    주의: white 는 "흰색" 의미 그대로 두고(파란 버튼 위 텍스트 등), 배경류는 surface 토큰을 쓴다.
+-->
+<resources>
+    <!-- 표면/배경 -->
+    <color name="editor_bg">#0F1115</color>         <!-- 화면 배경 -->
+    <color name="surface">#1A1D23</color>           <!-- 카드/시트/네비/입력 배경 -->
+    <color name="muted_bg">#242830</color>          <!-- 태그/검색박스/스켈레톤 등 옅은 배경 -->
+    <color name="search_bg">#242830</color>
+
+    <!-- 텍스트 -->
+    <color name="editor_title">#ECEDEE</color>      <!-- 제목/본문 강조 -->
+    <color name="editor_meta">#9BA1A8</color>       <!-- 보조 텍스트 -->
+    <color name="text_primary">#ECEDEE</color>
+    <color name="text_secondary">#9BA1A8</color>
+    <color name="text_date">#9BA1A8</color>
+    <color name="icon_dark">#C7CBD1</color>
+
+    <!-- 구분선/테두리 -->
+    <color name="editor_divider">#2A2E35</color>
+    <color name="card_border">#2A2E35</color>
+    <color name="chip_border">#2A2E35</color>
+    <color name="divider">#2A2E35</color>
+
+    <!-- 강조(블루) — 어두운 배경에서 대비 확보 위해 약간 밝게 -->
+    <color name="editor_blue">#4C8DFF</color>
+    <color name="blue_primary">#4C8DFF</color>
+
+    <!-- 배지/배너(다크 톤) -->
+    <color name="published_text">#4ADE80</color>
+    <color name="published_bg">#13351F</color>
+    <color name="review_text">#FBBF24</color>
+    <color name="review_bg">#3A2E10</color>
+    <color name="ai_banner_bg">#16233B</color>
+    <color name="ai_banner_border">#2A3B5C</color>
+</resources>

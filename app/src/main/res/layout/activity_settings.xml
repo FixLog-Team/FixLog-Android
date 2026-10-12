@@ -30,6 +30,49 @@
                 android:textStyle="bold"
                 android:textColor="@color/editor_title" />
 
+            <!-- ============ 테마 섹션 ============ -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="16dp"
+                android:text="@string/settings_theme"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/editor_meta" />
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tab_theme"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:background="@android:color/transparent"
+                app:tabMode="fixed"
+                app:tabGravity="fill"
+                app:tabInlineLabel="true"
+                app:tabRippleColor="@color/ai_banner_bg"
+                app:tabIndicator="@drawable/tab_indicator"
+                app:tabIndicatorColor="@color/editor_blue"
+                app:tabIndicatorFullWidth="false"
+                app:tabIndicatorHeight="3dp"
+                app:tabSelectedTextColor="@color/editor_blue"
+                app:tabTextColor="@color/editor_meta"
+                app:tabTextAppearance="@style/TextAppearance.FixLog.Tab">
+                <com.google.android.material.tabs.TabItem
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_theme_system" />
+                <com.google.android.material.tabs.TabItem
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_theme_light" />
+                <com.google.android.material.tabs.TabItem
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_theme_dark" />
+            </com.google.android.material.tabs.TabLayout>
+
             <!-- ============ 워크스페이스 섹션 ============ -->
             <TextView
                 android:layout_width="wrap_content"

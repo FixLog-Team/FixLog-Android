@@ -231,4 +231,8 @@
     <string name="share_no_export_suffix"> · No export</string>
     <string name="tree_delete_folder_extra">\nSubfolders and documents will also be moved to the trash.</string>
     <string name="tree_delete_confirm">Delete \'%1\$s\'?%2\$s\n\nIt will be moved to the trash. You can view and restore items from the trash on the web.</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
 </resources>
