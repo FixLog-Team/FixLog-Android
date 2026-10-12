@@ -1,8 +1,6 @@
 package kr.co.fixlog.util
 
-import android.text.InputType
 import android.util.Log
-import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -11,7 +9,6 @@ import kotlinx.coroutines.launch
 import kr.co.fixlog.R
 import kr.co.fixlog.data.remote.DocumentApi
 import kr.co.fixlog.data.remote.FolderApi
-import kr.co.fixlog.data.remote.dto.FolderTreeDto
 
 /**
  * 문서 카드에서 공통으로 쓰는 문서 CRUD 액션 메뉴.
@@ -41,17 +38,14 @@ object DocumentActionsHelper {
         onChanged: () -> Unit,
         onRenamed: ((String) -> Unit)? = null
     ) {
-        val actions = listOf<Pair<String, () -> Unit>>(
-            activity.getString(R.string.common_rename) to { showRenameDialog(activity, scope, documentId, title, onChanged, onRenamed) },
-            activity.getString(R.string.actions_duplicate) to { runAction(activity, scope, activity.getString(R.string.actions_document_duplicated), activity.getString(R.string.actions_duplicate_failed), onChanged) { DocumentApi.duplicate(documentId) } },
-            activity.getString(R.string.common_move) to { showMovePicker(activity, scope, documentId, onChanged) },
-            activity.getString(R.string.actions_share) to { ShareDialogHelper.show(activity, scope, "document", documentId, title) },
-            activity.getString(R.string.common_delete) to { confirmDelete(activity, scope, documentId, title, onChanged) }
+        val actions = listOf(
+            ActionMenuDialog.Action(activity.getString(R.string.common_rename), R.drawable.ic_edit) { showRenameDialog(activity, scope, documentId, title, onChanged, onRenamed) },
+            ActionMenuDialog.Action(activity.getString(R.string.actions_duplicate), R.drawable.ic_copy) { runAction(activity, scope, activity.getString(R.string.actions_document_duplicated), activity.getString(R.string.actions_duplicate_failed), onChanged) { DocumentApi.duplicate(documentId) } },
+            ActionMenuDialog.Action(activity.getString(R.string.common_move), R.drawable.ic_folder_move) { showMovePicker(activity, scope, documentId, onChanged) },
+            ActionMenuDialog.Action(activity.getString(R.string.actions_share), R.drawable.ic_share) { ShareDialogHelper.show(activity, scope, "document", documentId, title) },
+            ActionMenuDialog.Action(activity.getString(R.string.common_delete), R.drawable.ic_trash, danger = true) { confirmDelete(activity, scope, documentId, title, onChanged) }
         )
-        AlertDialog.Builder(activity)
-            .setTitle(title.ifBlank { "Untitled" })
-            .setItems(actions.map { it.first }.toTypedArray()) { _, which -> actions[which].second() }
-            .show()
+        ActionMenuDialog.show(activity, title.ifBlank { "Untitled" }, actions, R.drawable.ic_file)
     }
 
     private fun showRenameDialog(
@@ -62,17 +56,12 @@ object DocumentActionsHelper {
         onChanged: () -> Unit,
         onRenamed: ((String) -> Unit)? = null
     ) {
-        val input = EditText(activity).apply {
-            setText(current)
-            setSelection(current.length)
-            inputType = InputType.TYPE_CLASS_TEXT
-            setSingleLine(true)
-        }
-        AlertDialog.Builder(activity)
+        val input = DialogInput(activity, text = current)
+        val dialog = AlertDialog.Builder(activity)
             .setTitle(activity.getString(R.string.common_rename))
-            .setView(input)
+            .setView(input.view)
             .setPositiveButton(activity.getString(R.string.actions_change)) { dialog, _ ->
-                val name = input.text?.toString()?.trim().orEmpty()
+                val name = input.value
                 when {
                     name.isBlank() -> Toast.makeText(activity, activity.getString(R.string.actions_enter_name), Toast.LENGTH_SHORT).show()
                     name == current -> Unit
@@ -86,7 +75,8 @@ object DocumentActionsHelper {
                 dialog.dismiss()
             }
             .setNegativeButton(activity.getString(R.string.common_cancel)) { d, _ -> d.cancel() }
-            .show()
+            .create()
+        input.showWithKeyboard(dialog)
     }
 
     private fun confirmDelete(
@@ -120,30 +110,11 @@ object DocumentActionsHelper {
                 Toast.makeText(activity, activity.getString(R.string.actions_load_folders_failed), Toast.LENGTH_SHORT).show()
                 return@launch
             }
-            val candidates = mutableListOf<Pair<String?, String>>() // (folderId, 표시명)
-            candidates.add(null to activity.getString(R.string.actions_root_top))
-            flattenTree(tree, 0, candidates)
-
-            AlertDialog.Builder(activity)
-                .setTitle(activity.getString(R.string.actions_select_move_destination))
-                .setItems(candidates.map { it.second }.toTypedArray()) { _, which ->
-                    val destId = candidates[which].first
-                    runAction(activity, scope, activity.getString(R.string.actions_moved), activity.getString(R.string.actions_move_failed), onChanged) {
-                        DocumentApi.move(documentId, destId)
-                    }
+            FolderPickerDialog.show(activity, activity.getString(R.string.actions_select_move_destination), tree) { destId ->
+                runAction(activity, scope, activity.getString(R.string.actions_moved), activity.getString(R.string.actions_move_failed), onChanged) {
+                    DocumentApi.move(documentId, destId)
                 }
-                .show()
-        }
-    }
-
-    private fun flattenTree(
-        nodes: List<FolderTreeDto>,
-        depth: Int,
-        out: MutableList<Pair<String?, String>>
-    ) {
-        for (node in nodes) {
-            out.add(node.folderId to ("  ".repeat(depth) + node.folderName))
-            flattenTree(node.children, depth + 1, out)
+            }
         }
     }
 

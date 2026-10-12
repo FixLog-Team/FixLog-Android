@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 공유 다이얼로그: 이메일로 공유 부여 + 현재 공유 대상 목록/회수. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="20dp"
-    android:paddingTop="12dp"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="8dp"
     android:paddingBottom="8dp">
 
     <EditText
         android:id="@+id/et_email"
+        style="@style/Widget.FixLog.EditText.Dialog"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/share_email_hint"
-        android:inputType="textEmailAddress"
-        android:maxLines="1"
-        android:importantForAutofill="no" />
+        android:inputType="textEmailAddress" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -33,14 +31,15 @@
             android:checked="true"
             android:text="@string/share_allow_download"
             android:textSize="14sp"
-            android:textColor="@color/editor_meta" />
+            android:textColor="@color/editor_meta"
+            android:buttonTint="@color/editor_blue" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_share"
+            style="@style/Widget.FixLog.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/common_share"
-            app:cornerRadius="10dp" />
+            android:text="@string/common_share" />
     </LinearLayout>
 
     <TextView

@@ -36,4 +36,7 @@
     <color name="review_bg">#3A2E10</color>
     <color name="ai_banner_bg">#16233B</color>
     <color name="ai_banner_border">#2A3B5C</color>
+
+    <!-- 위험(삭제) 동작 강조색 -->
+    <color name="danger_red">#F87171</color>
 </resources>

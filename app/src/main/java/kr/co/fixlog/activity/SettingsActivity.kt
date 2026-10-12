@@ -2,10 +2,8 @@ package kr.co.fixlog.activity
 
 import android.content.Intent
 import android.os.Bundle
-import android.text.InputType
 import android.util.Log
 import android.view.View
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -328,21 +326,18 @@ class SettingsActivity : AppCompatActivity() {
 
     /** 추가 다이얼로그: 이름 입력 → 생성 → 목록 갱신 후 새 워크스페이스로 전환. */
     private fun showAddWorkspaceDialog() {
-        val input = EditText(this).apply {
-            hint = getString(R.string.ws_name_hint)
-            inputType = InputType.TYPE_CLASS_TEXT
-            setSingleLine(true)
-        }
-        AlertDialog.Builder(this)
+        val input = kr.co.fixlog.util.DialogInput(this, hint = getString(R.string.ws_name_hint))
+        val dialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.ws_add))
-            .setView(input)
+            .setView(input.view)
             .setPositiveButton(getString(R.string.common_create)) { dialog, _ ->
-                val name = input.text?.toString()?.trim().orEmpty()
+                val name = input.value
                 if (name.isBlank()) toast(getString(R.string.ws_enter_name)) else createWorkspace(name)
                 dialog.dismiss()
             }
             .setNegativeButton(getString(R.string.common_cancel)) { d, _ -> d.cancel() }
-            .show()
+            .create()
+        input.showWithKeyboard(dialog)
     }
 
     private fun createWorkspace(name: String) {

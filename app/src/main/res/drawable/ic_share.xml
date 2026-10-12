@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 공유 (Lucide 스타일, 2px 스트로크) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:pathData="M21 5a3 3 0 1 1-6 0a3 3 0 1 1 6 0z" android:strokeColor="@color/editor_meta" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="@android:color/transparent" />
+    <path android:pathData="M9 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0z" android:strokeColor="@color/editor_meta" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="@android:color/transparent" />
+    <path android:pathData="M21 19a3 3 0 1 1-6 0a3 3 0 1 1 6 0z" android:strokeColor="@color/editor_meta" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="@android:color/transparent" />
+    <path android:pathData="M8.59 13.51l6.83 3.98" android:strokeColor="@color/editor_meta" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="@android:color/transparent" />
+    <path android:pathData="M15.41 6.51l-6.82 3.98" android:strokeColor="@color/editor_meta" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="@android:color/transparent" />
+</vector>

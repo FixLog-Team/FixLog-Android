@@ -45,6 +45,21 @@
     </style>
 
 
+    <!-- 팝업 입력창: 옅은 회색 채움 + 12dp 라운드(포커스 시 파란 테두리), 파란 커서. -->
+    <style name="Widget.FixLog.EditText.Dialog" parent="android:Widget.EditText">
+        <item name="android:background">@drawable/bg_input_field</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingHorizontal">14dp</item>
+        <item name="android:paddingVertical">12dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/editor_title</item>
+        <item name="android:textColorHint">@color/editor_meta</item>
+        <item name="android:textCursorDrawable">@drawable/cursor_blue</item>
+        <item name="android:textColorHighlight">#552563EB</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:importantForAutofill">no</item>
+    </style>
+
     <!-- 홈 추천 프롬프트 칩 -->
     <style name="HomeChip">
         <item name="android:layout_width">wrap_content</item>

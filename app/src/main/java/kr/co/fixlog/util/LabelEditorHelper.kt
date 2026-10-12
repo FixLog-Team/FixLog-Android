@@ -30,12 +30,20 @@ object LabelEditorHelper {
         val dp = activity.resources.displayMetrics.density
         fun px(v: Int) = (v * dp).toInt()
 
-        val input = EditText(activity).apply {
+        // 입력창/추가 버튼은 공용 팝업 스타일(Widget.FixLog.EditText.Dialog / Button.Primary)과 동일하게 맞춘다.
+        val input = EditText(activity, null, 0, R.style.Widget_FixLog_EditText_Dialog).apply {
             hint = activity.getString(R.string.label_label_name)
             inputType = InputType.TYPE_CLASS_TEXT
             setSingleLine(true)
         }
-        val addBtn = MaterialButton(activity).apply { text = activity.getString(R.string.common_add) }
+        val addBtn = MaterialButton(activity).apply {
+            text = activity.getString(R.string.common_add)
+            isAllCaps = false
+            textSize = 15f
+            cornerRadius = px(12)
+            backgroundTintList = ContextCompat.getColorStateList(activity, R.color.editor_blue)
+            setTextColor(ContextCompat.getColor(activity, R.color.white))
+        }
         val inputRow = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -51,7 +59,7 @@ object LabelEditorHelper {
         }
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(px(20), px(12), px(20), px(4))
+            setPadding(px(24), px(8), px(24), px(4))
             addView(inputRow)
             addView(ScrollView(activity).apply {
                 addView(listContainer)

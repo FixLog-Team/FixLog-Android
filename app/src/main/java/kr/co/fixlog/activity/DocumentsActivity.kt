@@ -115,18 +115,16 @@ class DocumentsActivity : AppCompatActivity() {
     }
 
     /**
-     * 우측 상단 필터 버튼 → 체크박스 팝업. 체크/해제 시 취소·적용 버튼 없이 바로 필터를 적용한다.
+     * 우측 상단 필터 버튼 → 선택형 드롭다운. 탭하면 취소·적용 버튼 없이 바로 필터를 켜고 끈다.
      */
     private fun showFilterDialog() {
-        val popup = android.widget.PopupMenu(this, binding.btnFilter)
-        val item = popup.menu.add(0, 1, 0, getString(R.string.docs_favorites_only))
-        item.isCheckable = true
-        item.isChecked = favoritesOnly
-        popup.setOnMenuItemClickListener {
-            applyFavoritesFilter(!favoritesOnly)
-            true
-        }
-        popup.show()
+        kr.co.fixlog.util.DropdownMenu.show(binding.btnFilter, listOf(
+            kr.co.fixlog.util.DropdownMenu.Item(
+                getString(R.string.docs_favorites_only),
+                if (favoritesOnly) R.drawable.ic_star_filled else R.drawable.ic_star_outline,
+                checked = favoritesOnly
+            ) { applyFavoritesFilter(!favoritesOnly) }
+        ))
     }
 
     /**
@@ -200,17 +198,10 @@ class DocumentsActivity : AppCompatActivity() {
 
     /** 우측 상단 + 버튼 → 새 폴더 / 새 문서 선택 팝업. */
     private fun showCreateMenu() {
-        val popup = android.widget.PopupMenu(this, binding.btnAdd)
-        popup.menu.add(0, 1, 0, getString(R.string.docs_new_document))
-        popup.menu.add(0, 2, 1, getString(R.string.docs_new_folder))
-        popup.setOnMenuItemClickListener {
-            when (it.itemId) {
-                1 -> createDocument()
-                2 -> showCreateFolderDialog()
-            }
-            true
-        }
-        popup.show()
+        kr.co.fixlog.util.DropdownMenu.show(binding.btnAdd, listOf(
+            kr.co.fixlog.util.DropdownMenu.Item(getString(R.string.docs_new_document), R.drawable.ic_doc_add) { createDocument() },
+            kr.co.fixlog.util.DropdownMenu.Item(getString(R.string.docs_new_folder), R.drawable.ic_folder_plus) { showCreateFolderDialog() }
+        ))
     }
 
     /** 현재 폴더(즐겨찾기 모드면 루트)에 새 문서를 만들고 에디터로 이동. */
@@ -231,24 +222,21 @@ class DocumentsActivity : AppCompatActivity() {
 
     /** 새 폴더 이름 입력 후 현재 위치에 생성. */
     private fun showCreateFolderDialog() {
-        val input = android.widget.EditText(this).apply {
-            hint = getString(R.string.docs_folder_name_hint)
-            inputType = android.text.InputType.TYPE_CLASS_TEXT
-            setSingleLine(true)
-        }
-        AlertDialog.Builder(this)
+        val input = kr.co.fixlog.util.DialogInput(this, hint = getString(R.string.docs_folder_name_hint))
+        val dialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.docs_new_folder))
-            .setView(input)
+            .setView(input.view)
             .setNegativeButton(getString(R.string.common_cancel), null)
             .setPositiveButton(getString(R.string.common_create)) { _, _ ->
-                val name = input.text?.toString()?.trim().orEmpty()
+                val name = input.value
                 if (name.isBlank()) {
                     Toast.makeText(this, getString(R.string.docs_enter_folder_name), Toast.LENGTH_SHORT).show()
                 } else {
                     createFolder(name)
                 }
             }
-            .show()
+            .create()
+        input.showWithKeyboard(dialog)
     }
 
     private fun createFolder(name: String) {

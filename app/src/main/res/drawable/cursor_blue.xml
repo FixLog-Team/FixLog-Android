@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 입력창 커서: 앱 강조색(파랑) 2dp. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/editor_blue" />
+    <size android:width="2dp" />
+</shape>
