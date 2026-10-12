@@ -47,6 +47,8 @@ class DocumentsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDocumentsBinding
     private lateinit var browserAdapter: DocumentAdapter
     private lateinit var folderNav: FolderNavigationHelper
+    /** 아래로 당겨 새로고침 진행 중 여부(이 동안은 skeleton을 띄우지 않는다). */
+    private var pullRefreshing = false
     private var browserInitialized = false
 
     /** 현재 표시 중인 아이템(메타 보강 후 갱신용). */
@@ -304,6 +306,8 @@ class DocumentsActivity : AppCompatActivity() {
             adapter = browserAdapter
         }
 
+        setupPullToRefresh()
+
         folderNav = FolderNavigationHelper(scope = lifecycleScope)
         folderNav.onLoadingChanged = { loading ->
             // 폴더 콘텐츠 조회 시작 시 skeleton 표시(실제 리스트는 enrich 완료 후 노출).
@@ -311,6 +315,7 @@ class DocumentsActivity : AppCompatActivity() {
         }
         folderNav.onError = { e ->
             Log.w(TAG, "폴더 조회 실패", e)
+            hideSkeleton() // 실패 시에도 skeleton/새로고침 표시를 걷어낸다.
             Toast.makeText(
                 this,
                 getString(R.string.docs_load_folder_failed, e.message ?: getString(R.string.common_unknown_error)),
@@ -355,8 +360,26 @@ class DocumentsActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 아래로 당겨 새로고침: 현재 위치(또는 즐겨찾기 필터)를 다시 로드한다.
+     * 당겨서 새로고침 중에는 skeleton 대신 기존 리스트 + 상단 스피너로 로딩을 표시한다.
+     * 리스트가 FrameLayout 안에 있어, 맨 위인지 여부는 RecyclerView 기준으로 판단한다.
+     */
+    private fun setupPullToRefresh() {
+        binding.swipeRefresh.apply {
+            setColorSchemeResources(R.color.editor_blue)
+            setProgressBackgroundColorSchemeResource(R.color.surface)
+            setOnChildScrollUpCallback { _, _ -> binding.rvBrowser.canScrollVertically(-1) }
+            setOnRefreshListener {
+                pullRefreshing = true
+                refresh()
+            }
+        }
+    }
+
     /** 리스트 로딩 중 skeleton 표시(실제 RecyclerView는 숨김) + 반짝임 시작. */
     private fun showSkeleton() {
+        if (pullRefreshing) return // 당겨서 새로고침 중엔 기존 리스트를 유지(스피너로 표시)
         binding.llSkeleton.visibility = View.VISIBLE
         binding.rvBrowser.visibility = View.INVISIBLE
         kr.co.fixlog.util.Shimmer.start(binding.llSkeleton)
@@ -364,6 +387,8 @@ class DocumentsActivity : AppCompatActivity() {
 
     /** 실제 리스트 표시(skeleton 숨김) + 반짝임 정지. */
     private fun hideSkeleton() {
+        pullRefreshing = false
+        binding.swipeRefresh.isRefreshing = false
         kr.co.fixlog.util.Shimmer.stop(binding.llSkeleton)
         binding.llSkeleton.visibility = View.GONE
         binding.rvBrowser.visibility = View.VISIBLE

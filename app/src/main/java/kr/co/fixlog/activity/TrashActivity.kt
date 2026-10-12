@@ -51,6 +51,13 @@ class TrashActivity : AppCompatActivity() {
             adapter = this@TrashActivity.adapter
         }
 
+        // 아래로 당겨 새로고침: 전체 화면 로딩 대신 상단 스피너로 표시한다.
+        binding.swipeRefresh.apply {
+            setColorSchemeResources(R.color.editor_blue)
+            setProgressBackgroundColorSchemeResource(R.color.surface)
+            setOnRefreshListener { load(showOverlay = false) }
+        }
+
         BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.TRASH)
     }
 
@@ -59,8 +66,8 @@ class TrashActivity : AppCompatActivity() {
         load()
     }
 
-    private fun load() {
-        LoadingIndicator.show(this)
+    private fun load(showOverlay: Boolean = true) {
+        if (showOverlay) LoadingIndicator.show(this)
         lifecycleScope.launch {
             runCatching { TrashApi.list() }
                 .onSuccess { items -> render(items) }
@@ -69,7 +76,8 @@ class TrashActivity : AppCompatActivity() {
                     render(emptyList())
                     toast(getString(R.string.trash_load_failed))
                 }
-            LoadingIndicator.hide(this@TrashActivity)
+            if (showOverlay) LoadingIndicator.hide(this@TrashActivity)
+            binding.swipeRefresh.isRefreshing = false
         }
     }
 

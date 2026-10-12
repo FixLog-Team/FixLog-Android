@@ -80,10 +80,16 @@
             android:layout_height="1dp"
             android:background="@color/editor_divider" />
 
-        <FrameLayout
+        <!-- 아래로 당겨 새로고침. 리스트 스크롤 여부는 코드에서 RecyclerView 기준으로 판단한다. -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
             <!-- 트리 구조 리스트 -->
             <androidx.recyclerview.widget.RecyclerView
@@ -109,6 +115,7 @@
                 <include layout="@layout/item_skeleton" />
             </LinearLayout>
         </FrameLayout>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
     </LinearLayout>
 
     <include
