@@ -66,6 +66,12 @@ class DocumentsActivity : AppCompatActivity() {
     private var myUserId: String? = null
     private var accessLoaded = false
 
+    /**
+     * 이 세션에서 내가 방금 생성한 폴더/문서 id. 협업 WS 접근 필터에서 목록 응답의 createUser가
+     * 비어 있어도(새로 만든 직후) 숨겨지지 않도록 항상 노출시킨다.
+     */
+    private val myCreatedIds = mutableSetOf<String>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -152,6 +158,7 @@ class DocumentsActivity : AppCompatActivity() {
         kr.co.fixlog.util.WorkspaceManager.getSelectedId(this) != null
 
     private fun isVisible(item: FileItem): Boolean {
+        if (myCreatedIds.contains(item.id)) return true
         if (item.createUser != null && item.createUser == myUserId) return true
         if (sharedIds.contains(item.id)) return true
         // 공유받은 폴더 하위(상속): 현재 경로의 상위 폴더가 공유 대상이면 모두 노출.
@@ -211,7 +218,10 @@ class DocumentsActivity : AppCompatActivity() {
         val parent = if (favoritesOnly) null else folderNav.currentFolderId()
         lifecycleScope.launch {
             runCatching { DocumentApi.create(parent, getString(R.string.common_untitled)) }
-                .onSuccess { doc -> openEditor(doc.documentId, doc.title) }
+                .onSuccess { doc ->
+                    myCreatedIds.add(doc.documentId) // 협업 WS 접근 필터에서 숨겨지지 않도록 기록
+                    openEditor(doc.documentId, doc.title)
+                }
                 .onFailure { e ->
                     Log.w(TAG, "문서 생성 실패", e)
                     Toast.makeText(this@DocumentsActivity, getString(R.string.docs_create_doc_failed, e.message ?: getString(R.string.common_unknown_error)), Toast.LENGTH_SHORT).show()
@@ -245,7 +255,8 @@ class DocumentsActivity : AppCompatActivity() {
         val parent = if (favoritesOnly) null else folderNav.currentFolderId()
         lifecycleScope.launch {
             runCatching { FolderApi.createFolder(FolderRequest(parentId = parent, folderName = name)) }
-                .onSuccess {
+                .onSuccess { created ->
+                    myCreatedIds.add(created.folderId) // 협업 WS 접근 필터에서 숨겨지지 않도록 기록
                     Toast.makeText(this@DocumentsActivity, getString(R.string.docs_folder_created), Toast.LENGTH_SHORT).show()
                     if (favoritesOnly) applyFavoritesFilter(false) else refresh()
                 }

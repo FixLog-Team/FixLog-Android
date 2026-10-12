@@ -78,6 +78,9 @@ class DocumentAdapter(
             if (moreClick != null) {
                 btnMore.visibility = View.VISIBLE
                 btnMore.setOnClickListener { moreClick(item) }
+                // 롱프레스 접근성 툴팁("자세히 보기") 억제 → 항상 더보기 메뉴만 뜨게 한다.
+                btnMore.isLongClickable = false
+                androidx.appcompat.widget.TooltipCompat.setTooltipText(btnMore, null)
             } else {
                 btnMore.visibility = View.GONE
                 btnMore.setOnClickListener(null)
