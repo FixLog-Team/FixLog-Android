@@ -43,6 +43,7 @@ object DocumentActionsHelper {
             ActionMenuDialog.Action(activity.getString(R.string.actions_duplicate), R.drawable.ic_copy) { runAction(activity, scope, activity.getString(R.string.actions_document_duplicated), activity.getString(R.string.actions_duplicate_failed), onChanged) { DocumentApi.duplicate(documentId) } },
             ActionMenuDialog.Action(activity.getString(R.string.common_move), R.drawable.ic_folder_move) { showMovePicker(activity, scope, documentId, onChanged) },
             ActionMenuDialog.Action(activity.getString(R.string.actions_share), R.drawable.ic_share) { ShareDialogHelper.show(activity, scope, "document", documentId, title) },
+            ActionMenuDialog.Action(activity.getString(R.string.actions_download), R.drawable.ic_import) { DocumentDownloader.download(activity, scope, documentId, title) },
             ActionMenuDialog.Action(activity.getString(R.string.common_delete), R.drawable.ic_trash, danger = true) { confirmDelete(activity, scope, documentId, title, onChanged) }
         )
         ActionMenuDialog.show(activity, title.ifBlank { "Untitled" }, actions, R.drawable.ic_file)

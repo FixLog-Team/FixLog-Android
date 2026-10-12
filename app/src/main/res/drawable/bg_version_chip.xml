@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 버전 기록 행 좌측의 버전 번호(v3) 칩: 옅은 파랑 배경 + 10dp 라운드. 다크 대응 토큰 사용. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/ai_banner_bg" />
+    <corners android:radius="10dp" />
+</shape>

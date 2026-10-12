@@ -36,6 +36,7 @@ object TreeItemActionsHelper {
         item: FileItem,
         onChanged: () -> Unit
     ) {
+        val isFile = item.type == FileType.FILE
         val actions = buildList {
             add(ActionMenuDialog.Action(activity.getString(R.string.common_rename), R.drawable.ic_edit) { showRenameDialog(activity, scope, item, onChanged) })
             add(ActionMenuDialog.Action(activity.getString(R.string.common_move), R.drawable.ic_folder_move) { showMovePicker(activity, scope, item, onChanged) })
@@ -43,6 +44,15 @@ object TreeItemActionsHelper {
                 val kind = if (item.type == FileType.FOLDER) "folder" else "document"
                 ShareDialogHelper.show(activity, scope, kind, item.id, item.name)
             })
+            // 문서 전용: PDF 다운로드 + 버전 기록(버전 기록은 문서 페이지에서만 제공).
+            if (isFile) {
+                add(ActionMenuDialog.Action(activity.getString(R.string.actions_download), R.drawable.ic_import) {
+                    DocumentDownloader.download(activity, scope, item.id, item.name)
+                })
+                add(ActionMenuDialog.Action(activity.getString(R.string.history_title), R.drawable.ic_history) {
+                    activity.startActivity(kr.co.fixlog.activity.DocumentHistoryActivity.intent(activity, item.id, item.name))
+                })
+            }
             add(ActionMenuDialog.Action(activity.getString(R.string.common_delete), R.drawable.ic_trash, danger = true) { confirmDelete(activity, scope, item, onChanged) })
         }
         val title = item.name.ifBlank { if (item.type == FileType.FOLDER) activity.getString(R.string.tree_folder) else activity.getString(R.string.tree_document) }

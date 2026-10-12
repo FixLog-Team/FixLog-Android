@@ -255,4 +255,35 @@
     <string name="cmd_underline">Underline</string>
     <string name="cmd_strike">Strikethrough</string>
     <string name="cmd_inline_code">Inline code</string>
+
+    <!-- 문서 다운로드 / 버전 기록 -->
+    <string name="actions_download">Download</string>
+    <string name="download_saved">Saved to Downloads</string>
+    <string name="common_open_file">Open</string>
+    <string name="download_failed">Download failed. Please try again later.</string>
+    <string name="download_forbidden">You don\'t have permission to download this document.</string>
+    <string name="download_no_viewer">No app found to open PDFs.</string>
+    <string name="history_title">Version history</string>
+    <string name="history_current_section">Current version</string>
+    <string name="history_previous_section">Previous versions</string>
+    <string name="history_current_chip">Now</string>
+    <string name="history_title_changed">Title changed</string>
+    <string name="history_empty">No previous versions yet. Each time you save, the earlier content is kept here.</string>
+    <string name="history_load_failed">Couldn\'t load version history.</string>
+    <string name="history_just_now">Just now</string>
+    <string name="history_minutes_ago">%1$dm ago</string>
+    <string name="history_hours_ago">%1$dh ago</string>
+    <string name="history_days_ago">%1$dd ago</string>
+    <string name="history_datetime_pattern">MMM d, yyyy HH:mm</string>
+    <string name="history_preview_title">v%1$d preview</string>
+    <string name="history_banner">Viewing v%1$d · %2$s · Read-only</string>
+    <string name="history_saved_at">Saved %1$s</string>
+    <string name="history_loading_version">Loading this version…</string>
+    <string name="history_load_version_failed">Couldn\'t load this version.</string>
+    <string name="history_restore_this">Restore this version</string>
+    <string name="history_restore_confirm_title">Restore this version?</string>
+    <string name="history_restore_confirm_msg">The current content is kept in history and the restore is saved as a new version, so you can undo it later.</string>
+    <string name="history_restore">Restore</string>
+    <string name="history_restored">Restored to v%1$d.</string>
+    <string name="history_restore_failed">Restore failed. Please try again later.</string>
 </resources>

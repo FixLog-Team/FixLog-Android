@@ -258,4 +258,35 @@
     <string name="cmd_underline">밑줄</string>
     <string name="cmd_strike">취소선</string>
     <string name="cmd_inline_code">코드</string>
+
+    <!-- 문서 다운로드 / 버전 기록 -->
+    <string name="actions_download">다운로드</string>
+    <string name="download_saved">다운로드 폴더에 저장했어요</string>
+    <string name="common_open_file">열기</string>
+    <string name="download_failed">다운로드에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
+    <string name="download_forbidden">이 문서를 다운로드할 권한이 없습니다.</string>
+    <string name="download_no_viewer">PDF를 열 수 있는 앱이 없습니다.</string>
+    <string name="history_title">버전 기록</string>
+    <string name="history_current_section">현재 버전</string>
+    <string name="history_previous_section">이전 버전</string>
+    <string name="history_current_chip">현재</string>
+    <string name="history_title_changed">제목 변경</string>
+    <string name="history_empty">아직 이전 버전이 없습니다. 문서를 저장하면 그 시점의 내용이 여기에 쌓여요.</string>
+    <string name="history_load_failed">버전 기록을 불러오지 못했습니다.</string>
+    <string name="history_just_now">방금 전</string>
+    <string name="history_minutes_ago">%1$d분 전</string>
+    <string name="history_hours_ago">%1$d시간 전</string>
+    <string name="history_days_ago">%1$d일 전</string>
+    <string name="history_datetime_pattern">yyyy년 M월 d일 HH:mm</string>
+    <string name="history_preview_title">v%1$d 미리보기</string>
+    <string name="history_banner">v%1$d · %2$s 버전을 보고 있어요 · 읽기 전용</string>
+    <string name="history_saved_at">%1$s에 저장된 내용</string>
+    <string name="history_loading_version">이 버전의 본문을 불러오는 중…</string>
+    <string name="history_load_version_failed">이 버전의 본문을 불러오지 못했습니다.</string>
+    <string name="history_restore_this">이 버전으로 복원</string>
+    <string name="history_restore_confirm_title">이 버전으로 복원할까요?</string>
+    <string name="history_restore_confirm_msg">현재 내용도 히스토리로 남아 있고 복원 결과가 새 버전으로 기록되므로, 복원 후에도 다시 되돌릴 수 있습니다.</string>
+    <string name="history_restore">복원</string>
+    <string name="history_restored">v%1$d 내용으로 되돌렸어요.</string>
+    <string name="history_restore_failed">복원에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
 </resources>

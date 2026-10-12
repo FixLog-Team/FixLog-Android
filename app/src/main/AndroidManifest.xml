@@ -60,6 +60,12 @@
         <activity
             android:name=".activity.TrashActivity"
             android:exported="false" />
+        <activity
+            android:name=".activity.DocumentHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.HistoryPreviewActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

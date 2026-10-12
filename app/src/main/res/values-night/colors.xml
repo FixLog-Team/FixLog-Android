@@ -39,4 +39,6 @@
 
     <!-- 위험(삭제) 동작 강조색 -->
     <color name="danger_red">#F87171</color>
+    <!-- 스낵바 액션 텍스트(스낵바 배경이 테마와 반대 톤이라 별도 지정) -->
+    <color name="snackbar_action">#2563EB</color>
 </resources>

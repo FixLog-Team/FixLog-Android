@@ -8,6 +8,8 @@ import kr.co.fixlog.data.remote.dto.ApiResponse
 import kr.co.fixlog.data.remote.dto.DocumentCreateRequest
 import kr.co.fixlog.data.remote.dto.DocumentDto
 import kr.co.fixlog.data.remote.dto.DocumentDuplicateDto
+import kr.co.fixlog.data.remote.dto.DocumentHistoryDetailDto
+import kr.co.fixlog.data.remote.dto.DocumentHistoryPageDto
 import kr.co.fixlog.data.remote.dto.DocumentMoveRequest
 import kr.co.fixlog.data.remote.dto.DocumentPageDto
 import kr.co.fixlog.data.remote.dto.DocumentSaveRequest
@@ -35,6 +37,9 @@ import java.lang.reflect.Type
  *   PATCH  /api/documents/{documentId}/move         → [move]
  *   GET    /api/documents/{documentId}/save-state   → [getSaveState]
  *   GET    /api/documents/{documentId}/download     → [downloadPdf] (application/pdf 바이트)
+ *   GET    /api/documents/{documentId}/history?page&size              → [listHistory]
+ *   GET    /api/documents/{documentId}/history/{historyId}            → [getHistory]
+ *   POST   /api/documents/{documentId}/history/{historyId}/restore    → [restoreHistory]
  */
 object DocumentApi {
     private const val PATH = "/api/documents"
@@ -279,9 +284,47 @@ object DocumentApi {
             .build()
         val response = ApiClient.httpClient.newCall(request).execute()
         response.use {
-            if (!it.isSuccessful) throw IOException("HTTP ${it.code}")
+            if (!it.isSuccessful) {
+                // 실패 시 본문은 공통 JSON 래퍼({code, message})일 수 있어 메시지를 함께 담는다.
+                val message = runCatching { JSONObject(it.body?.string().orEmpty()).optString("message") }.getOrNull()
+                throw HttpStatusException(it.code, message?.takeIf(String::isNotBlank) ?: "HTTP ${it.code}")
+            }
             it.body?.bytes() ?: throw IOException("Empty PDF body")
         }
+    }
+
+    /** 바이너리 응답 등 공통 래퍼를 쓰지 않는 호출의 HTTP 실패(상태 코드 포함). 403 = 다운로드 권한 없음/정책 금지. */
+    class HttpStatusException(val status: Int, message: String) : IOException(message)
+
+    /** 버전 기록 목록(최신순). 서버 보관 개수(기본 50)를 넘지 않으므로 한 페이지로 모두 받는다(웹과 동일). */
+    suspend fun listHistory(documentId: String, page: Int = 0, size: Int = 100): DocumentHistoryPageDto {
+        val url = "${ApiClient.BASE_URL}$PATH/$documentId/history".toHttpUrl().newBuilder()
+            .addQueryParameter("page", page.toString())
+            .addQueryParameter("size", size.toString())
+            .build()
+        return execute(Request.Builder().url(url).get().build(), DocumentHistoryPageDto::class.java)
+    }
+
+    /** 버전 상세(본문 포함). 서버 Editor.js blocks 를 BlockNote 로 변환해 반환. */
+    suspend fun getHistory(documentId: String, historyId: String): DocumentHistoryDetailDto {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId/history/$historyId")
+            .get()
+            .build()
+        val dto: DocumentHistoryDetailDto = execute(request, DocumentHistoryDetailDto::class.java)
+        return dto.blocks?.let { dto.copy(blocks = BlockFormatConverter.editorJsToBlockNote(it)) } ?: dto
+    }
+
+    /**
+     * 해당 버전으로 복원(요청 본문 없음). 복원 직전 내용은 서버가 새 버전(RESTORE)으로 보관하므로 되돌릴 수 있다.
+     * 복원된 문서를 반환한다.
+     */
+    suspend fun restoreHistory(documentId: String, historyId: String): DocumentDto {
+        val request = Request.Builder()
+            .url("${ApiClient.BASE_URL}$PATH/$documentId/history/$historyId/restore")
+            .post(ByteArray(0).toRequestBody(null))
+            .build()
+        return execute(request, DocumentDto::class.java)
     }
 
     // --- 공통 실행부 (FolderApi와 동일 규약) ---
