@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 키보드 위 커맨드 바의 한 버튼(칩): 아이콘 + 라벨. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:layout_marginEnd="8dp"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="8dp"
+    android:background="@drawable/bg_chip"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/iv_cmd_icon"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_marginEnd="6dp"
+        app:tint="@color/editor_meta"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/tv_cmd_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@color/editor_title"
+        android:maxLines="1" />
+</LinearLayout>

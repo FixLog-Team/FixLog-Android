@@ -80,12 +80,45 @@
             android:layout_height="1dp"
             android:background="@color/editor_divider" />
 
-        <WebView
-            android:id="@+id/web_view"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="@color/editor_bg" />
+            android:layout_weight="1">
+
+            <WebView
+                android:id="@+id/web_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/editor_bg" />
+
+            <!-- 에디터 로딩 중 원형 프로그레스 오버레이. 에디터 준비 완료 시 숨긴다. -->
+            <FrameLayout
+                android:id="@+id/editor_loading"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/editor_bg"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ProgressBar
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/editor_blue" />
+            </FrameLayout>
+        </FrameLayout>
+
+        <!-- Notion식 커맨드 바: 키보드가 떠 있을 때만 그 위에 표시. 버튼 탭 → 블록 커맨드 실행. -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_command_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"
+            android:clipToPadding="false"
+            android:scrollbars="none"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- 하단 플로팅 알약형 네비게이션 (공용 include) -->

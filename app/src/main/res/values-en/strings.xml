@@ -162,6 +162,7 @@
     <string name="docs_move_failed">Move failed</string>
     <string name="editor_favorite_change_failed">Failed to update favorite</string>
     <string name="editor_summarizing">Summarizing document…</string>
+    <string name="editor_suggesting_labels">Suggesting labels…</string>
     <string name="editor_summary_empty">Please write the document content first.</string>
     <string name="editor_write_content_first">Please write the document content first</string>
     <string name="editor_write_title_or_content_first">Please write a title or content first</string>
@@ -235,4 +236,23 @@
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
+    <string name="cmd_text">Text</string>
+    <string name="cmd_h1">Heading 1</string>
+    <string name="cmd_h2">Heading 2</string>
+    <string name="cmd_h3">Heading 3</string>
+    <string name="cmd_bulleted">Bulleted</string>
+    <string name="cmd_numbered">Numbered</string>
+    <string name="cmd_check">Check list</string>
+    <string name="cmd_callout">Callout</string>
+    <string name="cmd_code">Code</string>
+    <string name="cmd_table">Table</string>
+    <string name="cmd_text_style">Text style</string>
+    <string name="cmd_indent">Indent</string>
+    <string name="cmd_outdent">Outdent</string>
+    <string name="cmd_back">Back</string>
+    <string name="cmd_bold">Bold</string>
+    <string name="cmd_italic">Italic</string>
+    <string name="cmd_underline">Underline</string>
+    <string name="cmd_strike">Strikethrough</string>
+    <string name="cmd_inline_code">Inline code</string>
 </resources>

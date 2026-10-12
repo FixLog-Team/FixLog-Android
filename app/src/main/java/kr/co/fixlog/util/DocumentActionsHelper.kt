@@ -38,10 +38,11 @@ object DocumentActionsHelper {
         scope: CoroutineScope,
         documentId: String,
         title: String,
-        onChanged: () -> Unit
+        onChanged: () -> Unit,
+        onRenamed: ((String) -> Unit)? = null
     ) {
         val actions = listOf<Pair<String, () -> Unit>>(
-            activity.getString(R.string.common_rename) to { showRenameDialog(activity, scope, documentId, title, onChanged) },
+            activity.getString(R.string.common_rename) to { showRenameDialog(activity, scope, documentId, title, onChanged, onRenamed) },
             activity.getString(R.string.actions_duplicate) to { runAction(activity, scope, activity.getString(R.string.actions_document_duplicated), activity.getString(R.string.actions_duplicate_failed), onChanged) { DocumentApi.duplicate(documentId) } },
             activity.getString(R.string.common_move) to { showMovePicker(activity, scope, documentId, onChanged) },
             activity.getString(R.string.actions_share) to { ShareDialogHelper.show(activity, scope, "document", documentId, title) },
@@ -58,7 +59,8 @@ object DocumentActionsHelper {
         scope: CoroutineScope,
         documentId: String,
         current: String,
-        onChanged: () -> Unit
+        onChanged: () -> Unit,
+        onRenamed: ((String) -> Unit)? = null
     ) {
         val input = EditText(activity).apply {
             setText(current)
@@ -74,7 +76,10 @@ object DocumentActionsHelper {
                 when {
                     name.isBlank() -> Toast.makeText(activity, activity.getString(R.string.actions_enter_name), Toast.LENGTH_SHORT).show()
                     name == current -> Unit
-                    else -> runAction(activity, scope, activity.getString(R.string.actions_name_changed), activity.getString(R.string.actions_rename_failed), onChanged) {
+                    else -> runAction(activity, scope, activity.getString(R.string.actions_name_changed), activity.getString(R.string.actions_rename_failed), {
+                        onRenamed?.invoke(name)
+                        onChanged()
+                    }) {
                         DocumentApi.updateTitle(documentId, name)
                     }
                 }

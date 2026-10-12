@@ -7,117 +7,222 @@
     <!-- BlockNote core는 API 안정성을 위해 버전 핀 고정(@0.51.4). "latest"는 커스텀 블록 API가 자주 바뀜. -->
     <link rel="stylesheet" href="https://esm.sh/@blocknote/core@0.51.4/style.css" />
     <style>
+        /* ---- 색상 토큰(라이트 기본값) ---- */
+        :root {
+            --bg: #F7F7F8;
+            --text: #1A1A1A;
+            --editor-text: #1F2937;
+            --muted: #6B7280;
+            --status: #888;
+            --placeholder: #B0B4BB;
+            --avatar-bg: #111827;
+            --avatar-text: #ffffff;
+            --primary: #2563EB;
+            --surface: #ffffff;
+            --border: #E5E7EB;
+            --toolbar-border: #e0e0e0;
+            --toolbar-text: #333333;
+            --toolbar-active-bg: #e3f2fd;
+            --toolbar-active-text: #1976d2;
+            --chip-bg: #F3F4F6;
+            --chip-text: #6B7280;
+            --code-bg: #F3F4F6;
+            --code-text: #24292E;
+            --inline-code-text: #EB5757;
+            --callout-bg: #EEF4FF;
+            --callout-border: #DBE4FF;
+            --labelbtn-bg: #EEF4FF;
+            --labelbtn-border: #DBE4FF;
+            --labelbtn-text: #2563EB;
+            --status-bg: #E7F7EE;
+            --status-text: #16A34A;
+            --strike: #9CA3AF;
+            --shadow: rgba(0, 0, 0, 0.18);
+        }
+        /* 시스템 다크(앱 테마가 '시스템'일 때) */
+        @media (prefers-color-scheme: dark) {
+            :root:not(.theme-light) {
+                --bg: #0F1115;
+                --text: #ECEDEE;
+                --editor-text: #D4D7DC;
+                --muted: #9BA1A8;
+                --status: #9BA1A8;
+                --placeholder: #5B616B;
+                --avatar-bg: #343A44;
+                --avatar-text: #ECEDEE;
+                --primary: #4C8DFF;
+                --surface: #1A1D23;
+                --border: #2A2E35;
+                --toolbar-border: #2A2E35;
+                --toolbar-text: #C7CBD1;
+                --toolbar-active-bg: #1E3A5F;
+                --toolbar-active-text: #4C8DFF;
+                --chip-bg: #242830;
+                --chip-text: #9BA1A8;
+                --code-bg: #242830;
+                --code-text: #D4D7DC;
+                --inline-code-text: #FF7B72;
+                --callout-bg: #16233B;
+                --callout-border: #2A3B5C;
+                --labelbtn-bg: #16233B;
+                --labelbtn-border: #2A3B5C;
+                --labelbtn-text: #4C8DFF;
+                --status-bg: #13351F;
+                --status-text: #4ADE80;
+                --strike: #6B7280;
+                --shadow: rgba(0, 0, 0, 0.5);
+            }
+        }
+        /* 앱이 명시적으로 지정한 다크(테마='다크') */
+        :root.theme-dark {
+            --bg: #0F1115;
+            --text: #ECEDEE;
+            --editor-text: #D4D7DC;
+            --muted: #9BA1A8;
+            --status: #9BA1A8;
+            --placeholder: #5B616B;
+            --avatar-bg: #343A44;
+            --avatar-text: #ECEDEE;
+            --primary: #4C8DFF;
+            --surface: #1A1D23;
+            --border: #2A2E35;
+            --toolbar-border: #2A2E35;
+            --toolbar-text: #C7CBD1;
+            --toolbar-active-bg: #1E3A5F;
+            --toolbar-active-text: #4C8DFF;
+            --chip-bg: #242830;
+            --chip-text: #9BA1A8;
+            --code-bg: #242830;
+            --code-text: #D4D7DC;
+            --inline-code-text: #FF7B72;
+            --callout-bg: #16233B;
+            --callout-border: #2A3B5C;
+            --labelbtn-bg: #16233B;
+            --labelbtn-border: #2A3B5C;
+            --labelbtn-text: #4C8DFF;
+            --status-bg: #13351F;
+            --status-text: #4ADE80;
+            --strike: #6B7280;
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
         html, body {
             margin: 0; padding: 0; min-height: 100%;
-            background: #F7F7F8; color: #1A1A1A;
+            background: var(--bg); color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             -webkit-text-size-adjust: 100%;
             overflow-x: hidden;
         }
         *, *::before, *::after { box-sizing: border-box; }
-        #status { padding: 8px 16px; font-size: 12px; color: #888; }
+        #status { padding: 8px 16px; font-size: 12px; color: var(--status); }
 
         /* ---- 문서 헤더 (본문과 함께 스크롤) ---- */
         #doc-header { padding: 16px 16px 0; }
         #doc-title {
             margin: 4px 0 12px; font-size: 28px; line-height: 1.2;
-            font-weight: 800; color: #1A1A1A; word-break: break-word;
+            font-weight: 800; color: var(--text); word-break: break-word;
         }
         #doc-title:focus { outline: none; }
         /* 비어 있을 때 플레이스홀더 표시(직접 편집용). */
         #doc-title:empty::before {
             content: attr(data-placeholder);
-            color: #B0B4BB; font-weight: 800;
+            color: var(--placeholder); font-weight: 800;
         }
         #doc-meta {
             display: flex; flex-wrap: wrap; align-items: center;
-            width: 100%; gap: 6px 10px; font-size: 13px; color: #6B7280;
+            width: 100%; gap: 6px 10px; font-size: 13px; color: var(--muted);
         }
         #doc-meta > span { white-space: nowrap; }
         #doc-meta .avatar {
             width: 22px; height: 22px; border-radius: 50%;
-            background: #111827; color: #fff; font-size: 10px; font-weight: 700;
+            background: var(--avatar-bg); color: var(--avatar-text); font-size: 10px; font-weight: 700;
             display: inline-flex; align-items: center; justify-content: center;
         }
         #doc-cat {
-            margin-top: 6px; font-size: 13px; color: #6B7280;
+            margin-top: 6px; font-size: 13px; color: var(--muted);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         #doc-status {
             display: inline-flex; align-items: center; gap: 6px;
             margin-top: 10px; padding: 3px 10px; border-radius: 999px;
-            background: #E7F7EE; color: #16A34A; font-size: 12px; font-weight: 600;
+            background: var(--status-bg); color: var(--status-text); font-size: 12px; font-weight: 600;
         }
-        #doc-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #16A34A; }
+        #doc-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--status-text); }
 
         /* 라벨(태그) 칩 + 수정 버튼 행 */
         #doc-labels-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
         #doc-cat { display: flex; flex-wrap: wrap; gap: 6px; }
         #btn-edit-labels {
-            border: 1px solid #DBE4FF; background: #EEF4FF; color: #2563EB;
+            border: 1px solid var(--labelbtn-border); background: var(--labelbtn-bg); color: var(--labelbtn-text);
             font-size: 12px; padding: 3px 10px; border-radius: 999px; cursor: pointer; white-space: nowrap;
         }
         #doc-cat .doc-tag {
             display: inline-flex; align-items: center;
             padding: 2px 10px; border-radius: 999px;
-            background: #F3F4F6; color: #6B7280; font-size: 12px; white-space: nowrap;
+            background: var(--chip-bg); color: var(--chip-text); font-size: 12px; white-space: nowrap;
         }
 
         /* ---- 에디터 본문 ---- */
         #editor { padding: 12px 8px 48px; }
-        .ProseMirror { outline: none; font-size: 16px; line-height: 1.6; color: #1F2937; }
+        .ProseMirror { outline: none; font-size: 16px; line-height: 1.6; color: var(--editor-text); tab-size: 4; }
         .ProseMirror p { margin: 0.4em 0; }
         .ProseMirror h1 { font-size: 26px; font-weight: 800; }
         .ProseMirror h2 { font-size: 20px; font-weight: 700; margin-top: 0.8em; }
         .ProseMirror h3 { font-size: 17px; font-weight: 700; }
 
         /* 체크리스트: 체크박스 파란색 + 완료 시 취소선 */
-        .ProseMirror input[type="checkbox"] { accent-color: #2563EB; width: 18px; height: 18px; }
+        .ProseMirror input[type="checkbox"] { accent-color: var(--primary); width: 18px; height: 18px; }
         [data-checked="true"] .bn-inline-content,
-        .bn-block-content[data-checked="true"] { text-decoration: line-through; color: #9CA3AF; }
+        .bn-block-content[data-checked="true"] { text-decoration: line-through; color: var(--strike); }
 
         /* 콜아웃: 내장 quote 블록을 파란 정보 박스로 재스타일 */
         .bn-block-content[data-content-type="quote"] {
             position: relative;
-            background: #EEF4FF; border: 1px solid #DBE4FF; border-left: 1px solid #DBE4FF;
+            background: var(--callout-bg); border: 1px solid var(--callout-border); border-left: 1px solid var(--callout-border);
             border-radius: 10px; padding: 12px 14px 12px 40px; margin: 10px 0;
-            font-style: normal; color: #1F2937;
+            font-style: normal; color: var(--editor-text);
         }
         .bn-block-content[data-content-type="quote"]::before {
             content: "ⓘ"; position: absolute; left: 14px; top: 11px;
-            color: #2563EB; font-weight: 700; font-style: normal;
+            color: var(--primary); font-weight: 700; font-style: normal;
         }
 
         /* 코드 블록 */
         .ProseMirror pre {
-            background: #F3F4F6; border-radius: 8px; padding: 12px 14px;
+            background: var(--code-bg); border-radius: 8px; padding: 12px 14px;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            font-size: 13px; line-height: 1.5; color: #24292E; overflow-x: auto;
+            font-size: 13px; line-height: 1.5; color: var(--code-text); overflow-x: auto;
         }
         .ProseMirror code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        /* 인라인 코드: BlockNote 기본은 고정폭 글꼴뿐이라 한글에선 변화가 안 보임 → 배경/색으로 구분 */
+        .bn-inline-content code {
+            background: var(--code-bg); color: var(--inline-code-text);
+            border: 1px solid var(--border); border-radius: 4px;
+            padding: 0.1em 0.35em; font-size: 0.9em;
+        }
 
         /* 표 */
         .bn-block-content[data-content-type="table"] { font-size: 14px; }
 
         /* 파일 첨부: 카드형 컨테이너 */
         .bn-block-content[data-content-type="file"] {
-            background: #ffffff; border: 1px solid #E5E7EB; border-radius: 10px;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
             padding: 10px 12px; margin: 10px 0;
         }
 
         /* Floating formatting toolbar */
         #toolbar {
             position: fixed; display: none; flex-direction: row;
-            background: #ffffff; border: 1px solid #e0e0e0; border-radius: 10px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); padding: 4px; gap: 2px; z-index: 1000;
+            background: var(--surface); border: 1px solid var(--toolbar-border); border-radius: 10px;
+            box-shadow: 0 6px 18px var(--shadow); padding: 4px; gap: 2px; z-index: 1000;
         }
         #toolbar.show { display: flex; }
         .tb-btn {
             background: transparent; border: 0; padding: 8px 12px; font-size: 14px;
-            cursor: pointer; border-radius: 6px; color: #333; min-width: 40px;
+            cursor: pointer; border-radius: 6px; color: var(--toolbar-text); min-width: 40px;
         }
-        .tb-btn:active { background: #e3f2fd; }
-        .tb-btn.active { background: #e3f2fd; color: #1976d2; }
+        .tb-btn:active { background: var(--toolbar-active-bg); }
+        .tb-btn.active { background: var(--toolbar-active-bg); color: var(--toolbar-active-text); }
         .tb-btn.bold { font-weight: 700; }
         .tb-btn.italic { font-style: italic; }
         .tb-btn.underline { text-decoration: underline; }
@@ -166,20 +271,7 @@
                 title_placeholder: "제목을 입력하세요",
                 add_label: "＋ 라벨 추가",
                 edit_label: "라벨 수정",
-                draft: "초안",
-                slash: {
-                    paragraph:    ["본문", "일반 텍스트 블록"],
-                    heading1:     ["제목 1", "큰 섹션 제목"],
-                    heading2:     ["제목 2", "중간 제목"],
-                    heading3:     ["제목 3", "작은 제목"],
-                    bulletList:   ["글머리 기호 목록", "순서 없는 목록"],
-                    numberedList: ["번호 목록", "순서 있는 목록"],
-                    checkList:    ["체크리스트", "할 일 목록"],
-                    callout:      ["콜아웃", "정보 박스"],
-                    codeBlock:    ["코드 블록", "고정폭 코드"],
-                    table:        ["표", "행과 열"],
-                    file:         ["파일 첨부", "파일 첨부하기"]
-                }
+                draft: "초안"
             },
             en: {
                 loading: "Loading editor…",
@@ -187,20 +279,7 @@
                 title_placeholder: "Enter a title",
                 add_label: "＋ Add label",
                 edit_label: "Edit labels",
-                draft: "Draft",
-                slash: {
-                    paragraph:    ["Text", "Plain text block"],
-                    heading1:     ["Heading 1", "Big section heading"],
-                    heading2:     ["Heading 2", "Medium heading"],
-                    heading3:     ["Heading 3", "Small heading"],
-                    bulletList:   ["Bulleted list", "Unordered list"],
-                    numberedList: ["Numbered list", "Ordered list"],
-                    checkList:    ["Check list", "Task list"],
-                    callout:      ["Callout", "Info box"],
-                    codeBlock:    ["Code block", "Monospace code"],
-                    table:        ["Table", "Rows and columns"],
-                    file:         ["File attachment", "Attach a file"]
-                }
+                draft: "Draft"
             }
         };
         let LANG = (navigator.language || "en").toLowerCase().startsWith("ko") ? "ko" : "en";
@@ -224,6 +303,20 @@
             if (!code) return;
             LANG = String(code).toLowerCase().startsWith("ko") ? "ko" : "en";
             applyStaticI18n();
+        };
+
+        /**
+         * 네이티브가 앱 테마를 지정할 때 호출.
+         *  - "dark"  : 강제 다크(:root.theme-dark)
+         *  - "light" : 강제 라이트(:root.theme-light)
+         *  - "system": 클래스 제거 → prefers-color-scheme 미디어쿼리를 따름
+         */
+        window.setTheme = (mode) => {
+            const root = document.documentElement;
+            root.classList.remove("theme-dark", "theme-light");
+            const m = String(mode || "system").toLowerCase();
+            if (m === "dark") root.classList.add("theme-dark");
+            else if (m === "light") root.classList.add("theme-light");
         };
 
         applyStaticI18n();
@@ -291,17 +384,6 @@
             } catch (e) { console.error("setDocumentMeta", e); }
         };
 
-        // --- Slash command catalog (id만 고정; title/subtitle은 현재 언어로 생성) ---
-        const SLASH_IDS = [
-            "paragraph", "heading1", "heading2", "heading3", "bulletList",
-            "numberedList", "checkList", "callout", "codeBlock", "table", "file"
-        ];
-        /** 현재 언어 기준 {id,title,subtitle} 목록. */
-        function slashCommands() {
-            const map = t("slash");
-            return SLASH_IDS.map((id) => ({ id, title: map[id][0], subtitle: map[id][1] }));
-        }
-
         // 인라인 텍스트를 갖지 않는 "복합" 블록: 변환(convert) 대신 새 블록으로 삽입한다.
         const COMPLEX = new Set(["table", "file"]);
 
@@ -325,11 +407,6 @@
         }
 
         const hasAndroid = typeof Android !== "undefined" && Android !== null;
-        function notifySlash(state) {
-            if (!hasAndroid) return;
-            try { Android.onSlashMenuChanged(JSON.stringify(state)); }
-            catch (e) { console.error("bridge error", e); }
-        }
         // 헤더 제목 편집 → 네이티브(앱바 제목/저장)로 전달.
         function notifyTitle(text) {
             if (!hasAndroid) return;
@@ -363,10 +440,6 @@
         let editor;
         // 에디터 로드 전에 네이티브가 본문을 주입하면 여기 보관했다가 mount 직후 적용한다.
         let pendingContent = null;
-        // 명령 선택/취소 직후 짧은 억제 구간. 블록 변환 등 프로그램적 편집이 유발하는
-        // selectionchange/input 이벤트로 커맨드 메뉴가 다시 뜨는 것을 막는다.
-        // (keydown 키값에 의존하지 않아 소프트키보드/IME에도 안전.)
-        let slashSuppressUntil = 0;
 
         // blocks(배열 또는 JSON 문자열)를 에디터 본문으로 치환. 에디터 준비 전이면 보류.
         function applyContent(blocks) {
@@ -466,64 +539,91 @@
                     if (nb) editor.setTextCursorPosition(nb, "end");
                 }
                 editor.focus();
-                // 명령 처리 직후의 프로그램적 편집 이벤트로 메뉴가 되살아나지 않도록 잠시 억제.
-                slashSuppressUntil = Date.now() + 600;
-                notifySlash({ show: false });
             } catch (e) { console.error(e); }
         };
-
-        // Called by native code when the bottom sheet is dismissed (with or without selection).
-        // Idempotent: strips the trailing /query from the current block if still present.
-        window.clearSlashText = () => {
-            try {
-                slashSuppressUntil = Date.now() + 600;
-                if (!editor) return;
-                const cursor = editor.getTextCursorPosition();
-                const block = cursor && cursor.block;
-                if (!block) return;
-                const remaining = getCurrentBlockText().replace(/\/[A-Za-z0-9]*$/, "");
-                editor.updateBlock(block, { content: remaining || [] });
-                editor.setTextCursorPosition(block, "end");
-            } catch (e) { console.error(e); }
-        };
-
-        // Match a trailing "/word" at end of current block; show/hide native menu accordingly.
-        // 명령 선택/취소 직후의 억제 구간에는 (프로그램적 편집 이벤트여도) 절대 열지 않는다.
-        function checkSlashTrigger() {
-            if (Date.now() < slashSuppressUntil) {
-                notifySlash({ show: false });
-                return;
-            }
-            const text = getCurrentBlockText();
-            const m = text.match(/\/([A-Za-z0-9]*)$/);
-            if (!m) {
-                notifySlash({ show: false });
-                return;
-            }
-            const q = m[1].toLowerCase();
-            const items = slashCommands().filter(c =>
-                !q || c.title.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
-            );
-            notifySlash({ show: true, query: m[1], items });
-        }
 
         window.toggleStyle = (style) => {
             try {
                 if (!editor) return;
                 const map = {
                     bold: { bold: true }, italic: { italic: true },
-                    underline: { underline: true }, strike: { strike: true }
+                    underline: { underline: true }, strike: { strike: true },
+                    code: { code: true }
                 };
                 if (map[style]) editor.toggleStyles(map[style]);
                 editor.focus();
             } catch (e) { console.error(e); }
         };
 
+        // 블록 맨 앞에 넣는 들여쓰기 문자(탭). 너비는 CSS tab-size로 조절.
+        const INDENT_CHAR = "\t";
+        // 인라인 텍스트 앞에 들여쓰기 문자를 넣을 수 있는 블록인지(코드/표/파일 등 제외).
+        const canTextIndent = (block) => block && Array.isArray(block.content)
+            && block.type !== "codeBlock";
+
+        // 커맨드 바 "들여쓰기": 키보드 Tab처럼 동작하되 여러 번 누를 수 있다.
+        //  - 코드 블록: 공백 2칸 삽입(BlockNote 코드 블록의 Tab 동작과 동일)
+        //  - 그 외: 가능하면 현재 블록을 이전 블록의 하위로 중첩 → 리스트면 하위 리스트가 된다.
+        //    이전 형제 블록이 없어 더 중첩할 수 없으면(이미 첫 하위 항목/문서 첫 블록)
+        //    블록 맨 앞에 탭을 넣어 계속 들여쓴다.
+        window.indentBlock = () => {
+            try {
+                if (!editor) return;
+                const block = editor.getTextCursorPosition()?.block;
+                if (block && block.type === "codeBlock") {
+                    editor.transact((tr) => { tr.insertText("  "); });
+                } else if (editor.canNestBlock()) {
+                    editor.nestBlock();
+                } else if (canTextIndent(block)) {
+                    editor.transact((tr) => { tr.insertText(INDENT_CHAR, tr.selection.$from.start()); });
+                }
+                editor.focus();
+            } catch (e) { console.error(e); }
+        };
+
+        // 커맨드 바 "내어쓰기": 들여쓰기의 반대(키보드 Shift+Tab 대응).
+        //  - 코드 블록: 현재 줄 맨 앞의 공백을 최대 2칸 제거(들여쓰기로 넣은 2칸을 되돌림)
+        //  - 그 외: 블록 맨 앞에 들여쓰기 탭이 있으면 하나 제거, 없으면 중첩을 한 단계 해제
+        //    → 하위 리스트 항목이 상위 리스트로 올라간다. 최상위면 아무 일도 하지 않는다.
+        window.unindentBlock = () => {
+            try {
+                if (!editor) return;
+                const block = editor.getTextCursorPosition()?.block;
+                if (block && block.type === "codeBlock") {
+                    editor.transact((tr) => {
+                        const $from = tr.selection.$from;
+                        const before = $from.parent.textBetween(0, $from.parentOffset, "\n");
+                        const lineStart = $from.start() + before.lastIndexOf("\n") + 1;
+                        const lead = /^ {1,2}/.exec($from.parent.textBetween(lineStart - $from.start(), $from.parent.content.size, "\n"));
+                        if (lead) tr.delete(lineStart, lineStart + lead[0].length);
+                    });
+                    editor.focus();
+                    return;
+                }
+                let removed = false;
+                if (canTextIndent(block)) {
+                    editor.transact((tr) => {
+                        const $from = tr.selection.$from;
+                        if ($from.parent.textContent.startsWith(INDENT_CHAR)) {
+                            tr.delete($from.start(), $from.start() + INDENT_CHAR.length);
+                            removed = true;
+                        }
+                    });
+                }
+                if (!removed && editor.canUnnestBlock()) editor.unnestBlock();
+                editor.focus();
+            } catch (e) { console.error(e); }
+        };
+
         try {
             const { BlockNoteEditor } = await import("https://esm.sh/@blocknote/core@0.51.4");
+            const { en: enDict } = await import("https://esm.sh/@blocknote/core@0.51.4/locales");
 
             // 실제 본문은 네이티브가 setDocumentContent로 주입한다. 초기값은 빈 문단 하나.
             editor = BlockNoteEditor.create({
+                // 빈 문단에 뜨는 기본 안내 문구("Enter text or type '/' for commands")를 숨긴다.
+                // 블록 변환은 네이티브 커맨드 바로 하므로 '/' 안내가 맞지 않음. 제목/리스트 플레이스홀더는 유지.
+                dictionary: { ...enDict, placeholders: { ...enDict.placeholders, default: "" } },
                 initialContent: [
                     { type: "paragraph", content: "" }
                 ]
@@ -569,18 +669,13 @@
                 window.toggleStyle(btn.dataset.style);
             });
 
-            // --- Slash menu: DOM-based detection (works with @blocknote/core alone) ---
-            const editorEl = document.getElementById("editor");
-            editorEl.addEventListener("input", checkSlashTrigger);
-            editorEl.addEventListener("keyup", checkSlashTrigger);
-            editorEl.addEventListener("keydown", (e) => {
-                if (e.key === "Escape") notifySlash({ show: false });
-            });
-            document.addEventListener("selectionchange", checkSlashTrigger);
-
             status.style.display = "none";
+            // 에디터 마운트/배선 완료 → 네이티브 로딩 오버레이 제거 신호.
+            try { window.Android && window.Android.onEditorReady && window.Android.onEditorReady(); } catch (e) {}
         } catch (err) {
             status.textContent = t("load_failed") + err.message;
+            // 실패해도 로딩 오버레이는 걷어낸다(에러 메시지를 보이게).
+            try { window.Android && window.Android.onEditorReady && window.Android.onEditorReady(); } catch (e2) {}
             console.error(err);
         }
     </script>

@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
@@ -25,15 +24,19 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.progressindicator.CircularProgressIndicatorSpec
+import com.google.android.material.progressindicator.IndeterminateDrawable
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kr.co.fixlog.R
-import kr.co.fixlog.adapter.SlashCommandAdapter
+import kr.co.fixlog.adapter.CommandBarAdapter
 import kr.co.fixlog.bridge.EditorBridge
 import kr.co.fixlog.data.remote.AiApi
 import kr.co.fixlog.data.remote.DocumentApi
 import kr.co.fixlog.data.remote.dto.DocumentDto
 import kr.co.fixlog.databinding.ActivityEditorBinding
-import kr.co.fixlog.model.SlashCommand
 import kr.co.fixlog.util.BottomNav
 import kr.co.fixlog.util.DocumentActionsHelper
 import kr.co.fixlog.util.toAiMessage
@@ -46,12 +49,19 @@ import java.util.Locale
 class EditorActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityEditorBinding
-    private var slashDialog: BottomSheetDialog? = null
-    private var slashAdapter: SlashCommandAdapter? = null
 
     // 본문 헤더 제목 편집 → 앱바 제목 반영 시, 앱바 TextWatcher가 다시 헤더로 되돌려보내
     // 캐럿이 튀는 무한 반영을 막기 위한 가드.
     private var syncingTitleFromWeb = false
+
+    /** 마지막 AI 요약 결과 (요약한 본문, 요약). 본문이 같으면 재요청 없이 재사용한다. */
+    private var summaryCache: Pair<String, String>? = null
+    /** 진행 중인 요약 요청 (본문, 결과). 같은 본문으로 다시 눌러도 중복 요청하지 않는다. */
+    private var summaryInFlight: Pair<String, Deferred<String>>? = null
+    /** 마지막 AI 라벨 추천 결과 (추천받은 본문, 라벨). 본문이 같으면 재요청 없이 재사용한다. */
+    private var tagsCache: Pair<String, List<String>>? = null
+    /** 진행 중인 라벨 추천 요청 (본문, 결과). */
+    private var tagsInFlight: Pair<String, Deferred<List<String>>>? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,10 +72,19 @@ class EditorActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+            // 키보드가 뜨면 콘텐츠를 키보드 위로 올리고(ime), 아니면 시스템 바 기준.
+            v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            // 커맨드 바는 키보드가 있을 때만(=작성 중) 노출하고, 하단 네비는 숨긴다.
+            binding.rvCommandBar.visibility = if (imeVisible) android.view.View.VISIBLE else android.view.View.GONE
+            // 키보드가 내려가면 서식 목록에 머물러 있지 않도록 기본 목록으로 되돌린다.
+            if (!imeVisible) (binding.rvCommandBar.adapter as? CommandBarAdapter)?.showMain()
+            binding.bottomNav.root.visibility = if (imeVisible) android.view.View.GONE else android.view.View.VISIBLE
             insets
         }
 
+        setupCommandBar()
         setupTitle()
         // 뒤로가기(툴바 버튼 + 시스템 back) 시 본문을 저장하고 종료한다.
         binding.btnBack.setOnClickListener { saveAndFinish() }
@@ -189,6 +208,7 @@ class EditorActivity : AppCompatActivity() {
      * AI(✦) → 현재 본문(에디터에 보이는 그대로)을 요약해 바텀시트로 보여준다.
      * 서버 DB의 저장본이 아니라 [getPlainText]로 읽은 현재 본문 평문을 POST /ai/summarize 로 직접 보낸다
      * → 화면 내용과 요약이 항상 일치. "이어서 대화" 시 이 본문+요약을 컨텍스트로 검색 화면에 넘긴다.
+     * 본문이 마지막 요약 때와 같으면 요청 없이 캐시된 요약을 바로 보여준다([requestSummary]).
      */
     private fun onAiClicked() {
         val view = layoutInflater.inflate(R.layout.sheet_ai_summary, null)
@@ -198,8 +218,8 @@ class EditorActivity : AppCompatActivity() {
         val loading = view.findViewById<android.view.View>(R.id.loading)
         val tvLoading = view.findViewById<TextView>(R.id.tv_loading)
         val tvSummary = view.findViewById<TextView>(R.id.tv_summary)
-        val btnContinue = view.findViewById<android.view.View>(R.id.btn_continue)
-        val btnSuggestLabels = view.findViewById<android.view.View>(R.id.btn_suggest_labels)
+        val btnContinue = view.findViewById<MaterialButton>(R.id.btn_continue)
+        val btnSuggestLabels = view.findViewById<MaterialButton>(R.id.btn_suggest_labels)
         view.findViewById<android.view.View>(R.id.btn_close).setOnClickListener { dialog.dismiss() }
 
         // 요약 완료(또는 실패) 전까지 "이어서 대화"/"라벨 추천"은 비활성.
@@ -214,8 +234,14 @@ class EditorActivity : AppCompatActivity() {
             openSearchWithContext(bodyText, summaryText)
         }
         btnSuggestLabels.setOnClickListener {
-            dialog.dismiss()
-            suggestLabels(bodyText)
+            suggestLabels(bodyText, dialog, btnSuggestLabels, btnContinue)
+        }
+
+        fun showResult(text: String) {
+            loading.visibility = android.view.View.GONE
+            tvSummary.text = text
+            btnContinue.isEnabled = true
+            btnSuggestLabels.isEnabled = true
         }
 
         loading.visibility = android.view.View.VISIBLE
@@ -231,25 +257,40 @@ class EditorActivity : AppCompatActivity() {
                 tvSummary.text = getString(R.string.editor_summary_empty)
                 return@evaluateJavascript
             }
+            // 본문이 그대로면 캐시된 요약을 즉시 표시(재요청 없음).
+            summaryCache?.takeIf { it.first == content }?.let { (_, cached) ->
+                summaryText = cached
+                showResult(cached)
+                return@evaluateJavascript
+            }
             lifecycleScope.launch {
-                runCatching { AiApi.summarize(content) }
+                runCatching { requestSummary(content).await() }
                     .onSuccess { summary ->
-                        loading.visibility = android.view.View.GONE
                         summaryText = summary
-                        tvSummary.text = summary
-                        btnContinue.isEnabled = true
-                        btnSuggestLabels.isEnabled = true
+                        showResult(summary)
                     }
                     .onFailure { e ->
+                        if (e is kotlinx.coroutines.CancellationException) throw e
                         Log.w(TAG, "AI 요약 실패: ${e::class.simpleName} ${e.message}")
-                        loading.visibility = android.view.View.GONE
-                        tvSummary.text = e.toAiMessage(this@EditorActivity)
                         // 요약이 실패해도 본문 기반으로 이어서 대화/라벨 추천은 가능하게 한다.
-                        btnContinue.isEnabled = true
-                        btnSuggestLabels.isEnabled = true
+                        showResult(e.toAiMessage(this@EditorActivity))
                     }
             }
         }
+    }
+
+    /**
+     * 본문 [content]의 요약 요청. 같은 본문으로 진행 중인 요청이 있으면 새로 보내지 않고 그 결과를 공유한다
+     * (시트를 닫았다 바로 다시 열어도 중복 요청 없음). 성공 결과는 [summaryCache]에 저장하고, 실패는 캐시하지 않는다.
+     * 요청은 시트가 아니라 화면 수명에 묶여 있어, 시트를 닫아도 끝까지 받아 캐시해 둔다.
+     */
+    private fun requestSummary(content: String): Deferred<String> {
+        summaryInFlight?.takeIf { it.first == content && it.second.isActive }?.let { return it.second }
+        val job = lifecycleScope.async {
+            AiApi.summarize(content).also { summaryCache = content to it }
+        }
+        summaryInFlight = content to job
+        return job
     }
 
     /**
@@ -257,15 +298,8 @@ class EditorActivity : AppCompatActivity() {
      * 저장되지 않은 새 문서면 먼저 저장해 id를 확보한 뒤 연다.
      */
     private fun onEditLabelsClicked() {
-        val existing = intent.getStringExtra(EXTRA_FILE_ID)
-        if (existing != null) {
-            openLabelEditor(existing)
-        } else {
-            persistCurrent { savedId ->
-                if (savedId == null) Toast.makeText(this, getString(R.string.editor_write_title_or_content_first), Toast.LENGTH_SHORT).show()
-                else openLabelEditor(savedId)
-            }
-        }
+        // 기존 문서든 새 문서든 라벨 편집 전 현재 본문을 저장해, 닫을 때 메타 재주입으로 편집분이 유실되지 않게 한다.
+        persistThen { id -> openLabelEditor(id) }
     }
 
     private fun openLabelEditor(documentId: String) {
@@ -279,45 +313,96 @@ class EditorActivity : AppCompatActivity() {
      * AI 라벨 추천: 현재 본문으로 /ai/tags 호출 → 추천 태그를 다중 선택 → 선택한 태그를 라벨로 추가.
      * 저장되지 않은 새 문서면 먼저 저장해 id를 확보한다.
      */
-    private fun suggestLabels(bodyText: String) {
+    private fun suggestLabels(
+        bodyText: String,
+        sheet: BottomSheetDialog,
+        btnSuggest: MaterialButton,
+        btnContinue: MaterialButton
+    ) {
         if (bodyText.isBlank()) {
             Toast.makeText(this, getString(R.string.editor_write_content_first), Toast.LENGTH_SHORT).show()
             return
         }
-        lifecycleScope.launch {
-            val tags = runCatching { AiApi.suggestTags(bodyText) }.getOrElse {
-                Toast.makeText(this@EditorActivity, it.toAiMessage(this@EditorActivity), Toast.LENGTH_SHORT).show()
-                emptyList()
+        // 본문이 그대로면 캐시된 추천 결과를 바로 사용(재요청 없음).
+        tagsCache?.takeIf { it.first == bodyText }?.let { (_, cached) ->
+            if (cached.isEmpty()) {
+                Toast.makeText(this, getString(R.string.editor_no_suggested_labels), Toast.LENGTH_SHORT).show()
+            } else {
+                sheet.dismiss()
+                showSuggestedLabels(cached)
             }
+            return
+        }
+        // 추천을 받는 동안 시트를 유지하고 버튼에 진행 상태를 보여준다(바로 닫히면 오류처럼 보임).
+        val originalText = btnSuggest.text
+        val originalIcon = btnSuggest.icon
+        btnSuggest.text = getString(R.string.editor_suggesting_labels)
+        btnSuggest.icon = IndeterminateDrawable.createCircularDrawable(
+            this,
+            CircularProgressIndicatorSpec(this, null).apply {
+                indicatorSize = (18 * resources.displayMetrics.density).toInt()
+                trackThickness = (2 * resources.displayMetrics.density).toInt()
+                indicatorColors = intArrayOf(ContextCompat.getColor(this@EditorActivity, R.color.editor_blue))
+            }
+        )
+        btnSuggest.isEnabled = false
+        btnContinue.isEnabled = false
+
+        val job = lifecycleScope.launch {
+            val result = runCatching { requestTags(bodyText).await() }
+            result.exceptionOrNull()?.let { if (it is kotlinx.coroutines.CancellationException) throw it }
+            val tags = result.getOrDefault(emptyList())
             if (tags.isEmpty()) {
-                Toast.makeText(this@EditorActivity, getString(R.string.editor_no_suggested_labels), Toast.LENGTH_SHORT).show()
+                // 실패/결과 없음: 시트에 머물며 버튼을 되돌리고 안내만 한다.
+                btnSuggest.text = originalText
+                btnSuggest.icon = originalIcon
+                btnSuggest.isEnabled = true
+                btnContinue.isEnabled = true
+                val msg = result.exceptionOrNull()?.toAiMessage(this@EditorActivity)
+                    ?: getString(R.string.editor_no_suggested_labels)
+                Toast.makeText(this@EditorActivity, msg, Toast.LENGTH_SHORT).show()
                 return@launch
             }
-            val checked = BooleanArray(tags.size)
-            AlertDialog.Builder(this@EditorActivity)
-                .setTitle(getString(R.string.editor_suggested_labels))
-                .setMultiChoiceItems(tags.toTypedArray(), checked) { _, which, isChecked -> checked[which] = isChecked }
-                .setNegativeButton(getString(R.string.common_cancel), null)
-                .setPositiveButton(getString(R.string.common_add)) { _, _ ->
-                    val selected = tags.filterIndexed { i, _ -> checked[i] }
-                    if (selected.isEmpty()) return@setPositiveButton
-                    addLabels(selected)
-                }
-                .show()
+            // 결과가 준비된 시점에 시트를 닫고 곧바로 선택 팝업을 띄운다.
+            sheet.setOnDismissListener(null)
+            sheet.dismiss()
+            showSuggestedLabels(tags)
         }
+        // 추천 중에 사용자가 시트를 닫으면 대기를 취소해 뒤늦게 팝업이 뜨지 않게 한다.
+        // (요청 자체는 [requestTags]에서 끝까지 받아 캐시하므로 다음에 누르면 바로 표시된다.)
+        sheet.setOnDismissListener { job.cancel() }
     }
 
-    /** 선택한 라벨들을 문서에 추가(필요 시 먼저 저장) 후 헤더 새로고침. */
-    private fun addLabels(labels: List<String>) {
-        val existing = intent.getStringExtra(EXTRA_FILE_ID)
-        if (existing != null) {
-            doAddLabels(existing, labels)
-        } else {
-            persistCurrent { savedId ->
-                if (savedId == null) Toast.makeText(this, getString(R.string.editor_save_document_first), Toast.LENGTH_SHORT).show()
-                else doAddLabels(savedId, labels)
-            }
+    /**
+     * 본문 [content]의 라벨 추천 요청. [requestSummary]와 같은 방식으로 진행 중 요청을 공유하고,
+     * 성공 결과(빈 목록 포함)는 [tagsCache]에 저장한다. 실패는 캐시하지 않는다.
+     */
+    private fun requestTags(content: String): Deferred<List<String>> {
+        tagsInFlight?.takeIf { it.first == content && it.second.isActive }?.let { return it.second }
+        val job = lifecycleScope.async {
+            AiApi.suggestTags(content).also { tagsCache = content to it }
         }
+        tagsInFlight = content to job
+        return job
+    }
+
+    private fun showSuggestedLabels(tags: List<String>) {
+        val checked = BooleanArray(tags.size)
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.editor_suggested_labels))
+            .setMultiChoiceItems(tags.toTypedArray(), checked) { _, which, isChecked -> checked[which] = isChecked }
+            .setNegativeButton(getString(R.string.common_cancel), null)
+            .setPositiveButton(getString(R.string.common_add)) { _, _ ->
+                val selected = tags.filterIndexed { i, _ -> checked[i] }
+                if (selected.isEmpty()) return@setPositiveButton
+                addLabels(selected)
+            }
+            .show()
+    }
+
+    /** 선택한 라벨들을 문서에 추가(현재 본문 자동 저장 후) 후 헤더 새로고침. */
+    private fun addLabels(labels: List<String>) {
+        persistThen { id -> doAddLabels(id, labels) }
     }
 
     private fun doAddLabels(documentId: String, labels: List<String>) {
@@ -347,13 +432,26 @@ class EditorActivity : AppCompatActivity() {
 
     /** 더보기(…) → 문서 액션 메뉴. 새 문서(id 없음)는 저장 전이라 안내만 한다. */
     private fun showMoreMenu() {
-        val id = intent.getStringExtra(EXTRA_FILE_ID)
-        if (id == null) {
-            Toast.makeText(this, getString(R.string.editor_available_after_save), Toast.LENGTH_SHORT).show()
-            return
+        // 보조 작업 전 현재 본문을 먼저 저장(자동 저장)해 이후 메타 재주입 시 편집분 유실을 막는다.
+        persistThen { id ->
+            val title = binding.tvTitle.text?.toString()?.ifBlank { "Untitled" } ?: "Untitled"
+            DocumentActionsHelper.show(
+                this, lifecycleScope, id, title,
+                onChanged = { fetchAndInjectMeta() },
+                onRenamed = { newName -> binding.tvTitle.setText(newName) } // 앱바/본문 제목 즉시 반영
+            )
         }
-        val title = binding.tvTitle.text?.toString()?.ifBlank { "Untitled" } ?: "Untitled"
-        DocumentActionsHelper.show(this, lifecycleScope, id, title, onChanged = { fetchAndInjectMeta() })
+    }
+
+    /**
+     * 현재 본문을 먼저 저장(자동 저장)한 뒤, 저장된 문서 id로 [action]을 실행한다.
+     * 제목/본문이 모두 비어 생성되지 않으면 안내만 한다. (더보기·라벨 등 보조 작업 공통 진입점)
+     */
+    private fun persistThen(action: (String) -> Unit) {
+        persistCurrent { id ->
+            if (id == null) Toast.makeText(this, getString(R.string.editor_write_title_or_content_first), Toast.LENGTH_SHORT).show()
+            else action(id)
+        }
     }
 
     private fun isFavorite(fileId: String): Boolean =
@@ -380,6 +478,13 @@ class EditorActivity : AppCompatActivity() {
                 // 앱 로케일을 에디터(WebView)에 전달해 슬래시 메뉴/플레이스홀더 등을 해당 언어로 표시.
                 val lang = resources.configuration.locales[0].language
                 view?.evaluateJavascript("window.setLang && window.setLang('$lang');", null)
+                // 앱 테마(시스템/라이트/다크)를 에디터에 전달해 본문도 다크 대응.
+                val theme = when (kr.co.fixlog.util.ThemeManager.getMode(this@EditorActivity)) {
+                    kr.co.fixlog.util.ThemeManager.LIGHT -> "light"
+                    kr.co.fixlog.util.ThemeManager.DARK -> "dark"
+                    else -> "system"
+                }
+                view?.evaluateJavascript("window.setTheme && window.setTheme('$theme');", null)
                 // 우선 상단바 제목을 본문 헤더에 즉시 주입(네트워크와 무관하게 항상 보이게).
                 val title = binding.tvTitle.text?.toString().orEmpty()
                 val safe = title.replace("\\", "\\\\").replace("'", "\\'")
@@ -393,9 +498,9 @@ class EditorActivity : AppCompatActivity() {
         }
         binding.webView.addJavascriptInterface(
             EditorBridge(
-                onSlash = { json -> runOnUiThread { handleSlashState(json) } },
                 onTitle = { title -> runOnUiThread { applyTitleFromWeb(title) } },
-                onEditLabels = { runOnUiThread { onEditLabelsClicked() } }
+                onEditLabels = { runOnUiThread { onEditLabelsClicked() } },
+                onEditorReady = { runOnUiThread { hideEditorLoading() } }
             ),
             BRIDGE_NAME
         )
@@ -417,6 +522,28 @@ class EditorActivity : AppCompatActivity() {
     private fun setupBottomNav() {
         // 에디터는 문서 탭의 하위 상세 화면이므로 "문서" 탭을 활성 상태로 표시한다.
         BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.DOCS)
+    }
+
+    /**
+     * 키보드 위 커맨드 바(Notion식). 칩을 탭하면 editor.html의 executeSlashCommand(id)로 블록을 변환/삽입한다.
+     * 가로 스크롤 RecyclerView이며, 키보드 노출 시에만 보인다(인셋 리스너에서 토글).
+     */
+    private fun setupCommandBar() {
+        binding.rvCommandBar.apply {
+            layoutManager = LinearLayoutManager(this@EditorActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = CommandBarAdapter { cmd ->
+                when (cmd.kind) {
+                    CommandBarAdapter.Kind.STYLE -> evalEditorJs("window.toggleStyle && window.toggleStyle('${cmd.id}');")
+                    CommandBarAdapter.Kind.INDENT -> evalEditorJs("window.indentBlock && window.indentBlock();")
+                    CommandBarAdapter.Kind.OUTDENT -> evalEditorJs("window.unindentBlock && window.unindentBlock();")
+                    else -> executeSlashCommand(cmd.id)
+                }
+            }
+        }
+    }
+
+    private fun evalEditorJs(script: String) {
+        binding.webView.evaluateJavascript(script, null)
     }
 
     /**
@@ -475,74 +602,7 @@ class EditorActivity : AppCompatActivity() {
         }.getOrNull()
     }
 
-    private fun handleSlashState(json: String) {
-        val state = try {
-            JSONObject(json)
-        } catch (e: Exception) {
-            Log.w(TAG, "Bad slash menu payload: $json", e)
-            return
-        }
-
-        if (!state.optBoolean("show", false)) {
-            hideSlashMenu()
-            return
-        }
-
-        val itemsArr = state.optJSONArray("items")
-        val items = mutableListOf<SlashCommand>()
-        if (itemsArr != null) {
-            for (i in 0 until itemsArr.length()) {
-                val it = itemsArr.optJSONObject(i) ?: continue
-                items.add(
-                    SlashCommand(
-                        id = it.optString("id"),
-                        title = it.optString("title"),
-                        subtitle = it.optString("subtitle", "")
-                    )
-                )
-            }
-        }
-        showSlashMenu(items)
-    }
-
-    private fun showSlashMenu(items: List<SlashCommand>) {
-        if (slashDialog == null) {
-            val view = LayoutInflater.from(this)
-                .inflate(R.layout.bottom_sheet_slash_menu, null)
-            val rv = view.findViewById<RecyclerView>(R.id.rv_commands)
-            slashAdapter = SlashCommandAdapter { cmd ->
-                executeSlashCommand(cmd.id)
-                hideSlashMenu()
-            }
-            rv.layoutManager = LinearLayoutManager(this)
-            rv.adapter = slashAdapter
-
-            slashDialog = BottomSheetDialog(this).apply {
-                setContentView(view)
-                // Don't steal focus from the WebView so the user can keep typing
-                // to filter commands while the sheet is visible.
-                window?.setFlags(
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                )
-                setOnDismissListener {
-                    binding.webView.evaluateJavascript(
-                        "window.clearSlashText && window.clearSlashText();",
-                        null
-                    )
-                    slashDialog = null
-                    slashAdapter = null
-                }
-            }
-        }
-        slashAdapter?.setItems(items)
-        if (slashDialog?.isShowing != true) slashDialog?.show()
-    }
-
-    private fun hideSlashMenu() {
-        slashDialog?.dismiss()
-    }
-
+    /** 커맨드 바 칩 탭 → editor.html의 블록 변환/삽입 함수 호출. */
     private fun executeSlashCommand(id: String) {
         val safeId = id.replace("\\", "\\\\").replace("'", "\\'")
         binding.webView.evaluateJavascript(
@@ -611,6 +671,11 @@ class EditorActivity : AppCompatActivity() {
         .replace("'", "\\'")
         .replace("\n", "\\n")
         .replace("\r", "\\r")
+
+    /** 에디터 준비 완료 시 로딩 오버레이(원형 프로그레스)를 숨긴다. 중복 호출 안전. */
+    private fun hideEditorLoading() {
+        binding.editorLoading.visibility = android.view.View.GONE
+    }
 
     override fun onDestroy() {
         binding.webView.removeJavascriptInterface(BRIDGE_NAME)
