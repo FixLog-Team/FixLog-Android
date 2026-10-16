@@ -306,6 +306,7 @@
             if (!code) return;
             LANG = String(code).toLowerCase().startsWith("ko") ? "ko" : "en";
             applyStaticI18n();
+        };
 
         // 읽기 전용 모드(버전 기록 미리보기 등). 에디터 준비 전에 호출돼도 마운트 직후 적용된다.
         let readOnly = false;
@@ -316,7 +317,6 @@
             try { if (editor) editor.isEditable = !readOnly; } catch (e) {}
         }
         window.setReadOnly = (on) => { readOnly = !!on; applyReadOnly(); };
-        };
 
         /**
          * 네이티브가 앱 테마를 지정할 때 호출.
