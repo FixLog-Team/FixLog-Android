@@ -19,6 +19,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -41,6 +42,7 @@ import kr.co.fixlog.util.BottomNav
 import kr.co.fixlog.util.DocumentActionsHelper
 import kr.co.fixlog.util.toAiMessage
 import kr.co.fixlog.util.launchWithLoading
+import kr.co.fixlog.util.CoachMark
 import org.json.JSONObject
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -64,6 +66,10 @@ class EditorActivity : AppCompatActivity() {
     private var tagsInFlight: Pair<String, Deferred<List<String>>>? = null
 
     @SuppressLint("SetJavaScriptEnabled")
+    /** 코치마크 튜토리얼 중이면 키보드 없이도 커맨드 바를 보여주고, 샘플 문서를 띄우며 저장하지 않는다. */
+    private var tutorial = false
+    private var tutorialShown = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -77,10 +83,10 @@ class EditorActivity : AppCompatActivity() {
             // 키보드가 뜨면 콘텐츠를 키보드 위로 올리고(ime), 아니면 시스템 바 기준.
             v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
             // 커맨드 바는 키보드가 있을 때만(=작성 중) 노출하고, 하단 네비는 숨긴다.
-            binding.rvCommandBar.visibility = if (imeVisible) android.view.View.VISIBLE else android.view.View.GONE
+            binding.rvCommandBar.visibility = if (imeVisible || tutorial) android.view.View.VISIBLE else android.view.View.GONE
             // 키보드가 내려가면 서식 목록에 머물러 있지 않도록 기본 목록으로 되돌린다.
             if (!imeVisible) (binding.rvCommandBar.adapter as? CommandBarAdapter)?.showMain()
-            binding.bottomNav.root.visibility = if (imeVisible) android.view.View.GONE else android.view.View.VISIBLE
+            binding.bottomNav.root.visibility = if (imeVisible || tutorial) android.view.View.GONE else android.view.View.VISIBLE
             insets
         }
 
@@ -95,6 +101,75 @@ class EditorActivity : AppCompatActivity() {
 
         setupWebView()
         binding.webView.loadUrl("file:///android_asset/editor.html")
+    }
+
+    /**
+     * 코치마크 튜토리얼. 라벨 버튼이 WebView 안에 있어 에디터 준비 후 시작하고,
+     * 그 위치에 투명 마커 뷰를 겹쳐 대상으로 삼는다. 커맨드 바는 튜토리얼 동안 임시로 띄운다.
+     */
+    private fun startTutorial() {
+        if (tutorialShown || CoachMark.isSeen(this, "editor")) return
+        tutorialShown = true
+        tutorial = true
+        val realTitle = binding.tvTitle.text?.toString().orEmpty()
+        injectSample()
+        binding.webView.evaluateJavascript(
+            "(() => { const r = document.getElementById('btn-edit-labels')?.getBoundingClientRect();" +
+                " return r ? [r.left, r.top, r.width, r.height] : null; })()"
+        ) { json ->
+            val marker = labelMarker(json)
+            ViewCompat.requestApplyInsets(binding.main) // 커맨드 바 표시 + 하단 네비 숨김 반영
+            binding.rvCommandBar.doOnLayout {
+                CoachMark.show(this, "editor",
+                    CoachMark.Step(binding.btnFavorite, R.string.coach_editor_favorite),
+                    CoachMark.Step(binding.btnAi, R.string.coach_editor_ai),
+                    CoachMark.Step(binding.btnMore, R.string.coach_editor_more),
+                    CoachMark.Step(R.string.coach_editor_labels) { listOf(marker) },
+                    CoachMark.Step(binding.rvCommandBar, R.string.coach_editor_command_bar)
+                ) {
+                    tutorial = false
+                    marker?.let { (it.parent as? android.view.ViewGroup)?.removeView(it) }
+                    ViewCompat.requestApplyInsets(binding.main)
+                    // 샘플을 걷어내고 실제 문서를 다시 불러온다(제목 주입·메타/본문 조회는 onPageFinished가 수행).
+                    binding.tvTitle.setText(realTitle)
+                    binding.editorLoading.visibility = android.view.View.VISIBLE
+                    binding.webView.reload()
+                }
+            }
+        }
+    }
+
+    /** 튜토리얼용 샘플 제목·작성자·날짜·라벨·본문. 화면에만 표시하며 저장하지 않는다([persistCurrent]에서 차단). */
+    private fun injectSample() {
+        binding.tvTitle.setText(getString(R.string.sample_editor_title))
+        val meta = JSONObject().apply {
+            put("author", getString(R.string.sample_editor_author))
+            formatUpdated(OffsetDateTime.now().toString())?.let { put("updated", it) }
+            put("tags", org.json.JSONArray(listOf("Server", getString(R.string.sample_editor_label_incident))))
+        }
+        evalEditorJs("window.setDocumentMeta && window.setDocumentMeta('${jsEscape(meta.toString())}');")
+        val blocks = org.json.JSONArray()
+            .put(JSONObject().put("type", "heading").put("props", JSONObject().put("level", 2))
+                .put("content", getString(R.string.sample_editor_heading)))
+            .put(JSONObject().put("type", "paragraph").put("content", getString(R.string.sample_editor_paragraph)))
+            .put(JSONObject().put("type", "bulletListItem").put("content", getString(R.string.sample_editor_bullet)))
+            .put(JSONObject().put("type", "checkListItem").put("props", JSONObject().put("checked", true))
+                .put("content", getString(R.string.sample_editor_check_done)))
+            .put(JSONObject().put("type", "checkListItem").put("content", getString(R.string.sample_editor_check_todo)))
+        evalEditorJs("window.setDocumentContent && window.setDocumentContent('${jsEscape(blocks.toString())}');")
+    }
+
+    /** WebView 안 라벨 버튼(CSS px 사각형 JSON)과 같은 자리에 겹치는 투명 뷰. 못 찾으면 null. */
+    private fun labelMarker(json: String?): android.view.View? {
+        val r = runCatching { org.json.JSONArray(json) }.getOrNull() ?: return null
+        val d = resources.displayMetrics.density // viewport=device-width라 CSS px = dp
+        val marker = android.view.View(this)
+        (binding.webView.parent as android.widget.FrameLayout).addView(marker,
+            android.widget.FrameLayout.LayoutParams((r.getDouble(2) * d).toInt(), (r.getDouble(3) * d).toInt()).apply {
+                leftMargin = (r.getDouble(0) * d).toInt()
+                topMargin = (r.getDouble(1) * d).toInt()
+            })
+        return marker
     }
 
     /**
@@ -500,7 +575,7 @@ class EditorActivity : AppCompatActivity() {
             EditorBridge(
                 onTitle = { title -> runOnUiThread { applyTitleFromWeb(title) } },
                 onEditLabels = { runOnUiThread { onEditLabelsClicked() } },
-                onEditorReady = { runOnUiThread { hideEditorLoading() } }
+                onEditorReady = { runOnUiThread { hideEditorLoading(); startTutorial() } }
             ),
             BRIDGE_NAME
         )
@@ -555,6 +630,7 @@ class EditorActivity : AppCompatActivity() {
         launchWithLoading {
             runCatching { DocumentApi.getDocument(fileId) }
                 .onSuccess { dto ->
+                    if (tutorial) return@onSuccess // 샘플 표시 중. 튜토리얼이 끝나면 다시 불러온다.
                     // 라벨은 별도 엔드포인트라 함께 조회해 헤더에 표시(실패해도 본문/메타는 정상).
                     val labels = runCatching { DocumentApi.getLabels(fileId) }.getOrDefault(emptyList())
                     injectMeta(dto, labels)
@@ -631,6 +707,8 @@ class EditorActivity : AppCompatActivity() {
      */
     private fun persistCurrent(onSaved: (String?) -> Unit) {
         val existingId = intent.getStringExtra(EXTRA_FILE_ID)
+        // 튜토리얼 샘플 제목/본문이 실제 문서에 저장되지 않게 막는다.
+        if (tutorial) { onSaved(existingId); return }
         val rawTitle = binding.tvTitle.text?.toString()?.trim().orEmpty()
         // getDocumentContent()는 BlockNote 블록 배열을 반환 → evaluateJavascript가 JSON 텍스트로 넘겨준다.
         binding.webView.evaluateJavascript(

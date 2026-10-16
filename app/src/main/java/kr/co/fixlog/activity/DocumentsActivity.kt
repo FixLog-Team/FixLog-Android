@@ -30,6 +30,7 @@ import kr.co.fixlog.model.FileType
 import kr.co.fixlog.util.BottomNav
 import kr.co.fixlog.util.OwnerNames
 import kr.co.fixlog.util.TreeItemActionsHelper
+import kr.co.fixlog.util.CoachMark
 
 /**
  * 문서(/documents) 화면. 폴더/문서를 트리 구조 리스트로만 표시한다.
@@ -74,6 +75,9 @@ class DocumentsActivity : AppCompatActivity() {
      */
     private val myCreatedIds = mutableSetOf<String>()
 
+    /** 코치마크 튜토리얼 중이면 서버 대신 샘플 목록을 보여준다. 끝나면 실제 목록을 로드한다. */
+    private var tutorial = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -89,10 +93,40 @@ class DocumentsActivity : AppCompatActivity() {
         binding.btnFilter.setOnClickListener { showFilterDialog() }
         binding.btnAdd.setOnClickListener { showCreateMenu() }
         BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.DOCS)
+        tutorial = CoachMark.show(this, "documents",
+            CoachMark.Step(binding.btnAdd, R.string.coach_docs_add),
+            CoachMark.Step(binding.btnFilter, R.string.coach_docs_filter),
+            CoachMark.Step(binding.breadcrumbScroll, R.string.coach_docs_breadcrumb),
+            CoachMark.Step(R.string.coach_docs_sample_items) {
+                listOf(binding.rvBrowser.getChildAt(0), binding.rvBrowser.getChildAt(1))
+            },
+            CoachMark.Step(R.string.coach_docs_sample_more) { listOf(binding.rvBrowser.getChildAt(1)?.findViewById(R.id.btn_more)) },
+            CoachMark.Step(binding.bottomNav.root, R.string.coach_docs_nav)
+        ) {
+            tutorial = false
+            loadBrowser()
+        }
     }
 
     override fun onResume() {
         super.onResume()
+        if (tutorial) showSamples() else loadBrowser()
+    }
+
+    /** 튜토리얼용 샘플 목록. 서버에 저장되지 않으며 화면에만 표시한다. */
+    private fun showSamples() {
+        val today = java.time.LocalDate.now().toString()
+        renderBreadcrumb()
+        browserAdapter.updateItems(listOf(
+            FileItem("sample-folder", getString(R.string.sample_folder), FileType.FOLDER, today, owner = "FixLog"),
+            FileItem("sample-doc-1", getString(R.string.sample_doc_deploy), FileType.FILE, today, owner = "FixLog",
+                labels = listOf(getString(R.string.sample_label))),
+            FileItem("sample-doc-2", getString(R.string.sample_doc_incident), FileType.FILE, today, owner = "FixLog")
+        ))
+        hideSkeleton()
+    }
+
+    private fun loadBrowser() {
         loadAccessScope()
         if (favoritesOnly) {
             browserInitialized = true

@@ -24,6 +24,7 @@ import kr.co.fixlog.util.HistoryTime
 import kr.co.fixlog.util.LoadingIndicator
 import kr.co.fixlog.util.OwnerNames
 import kr.co.fixlog.util.ThemeManager
+import kr.co.fixlog.util.CoachMark
 import org.json.JSONObject
 
 /**
@@ -66,6 +67,7 @@ class HistoryPreviewActivity : AppCompatActivity() {
 
         setupWebView()
         binding.webView.loadUrl("file:///android_asset/editor.html")
+        CoachMark.show(this, "history_preview", CoachMark.Step(binding.btnRestore, R.string.coach_preview_restore))
     }
 
     private fun setupWebView() {

@@ -19,6 +19,7 @@ import kr.co.fixlog.data.remote.dto.TrashItemDto
 import kr.co.fixlog.databinding.ActivityTrashBinding
 import kr.co.fixlog.util.BottomNav
 import kr.co.fixlog.util.LoadingIndicator
+import kr.co.fixlog.util.CoachMark
 
 /**
  * 휴지통(/trash) 화면. 삭제된 폴더·문서를 복원하거나 영구 삭제한다.
@@ -30,6 +31,9 @@ class TrashActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTrashBinding
     private lateinit var adapter: TrashAdapter
+
+    /** 코치마크 튜토리얼 중이면 서버 대신 샘플 목록을 보여준다. 끝나면 실제 목록을 로드한다. */
+    private var tutorial = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,11 +63,28 @@ class TrashActivity : AppCompatActivity() {
         }
 
         BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.TRASH)
+        tutorial = CoachMark.show(this, "trash",
+            CoachMark.Step(R.string.coach_trash_list) { listOf(binding.rvTrash.getChildAt(0)) },
+            CoachMark.Step(R.string.coach_trash_restore) { listOf(binding.rvTrash.getChildAt(0)?.findViewById(R.id.btn_restore)) },
+            CoachMark.Step(R.string.coach_trash_purge) { listOf(binding.rvTrash.getChildAt(0)?.findViewById(R.id.btn_purge)) }
+        ) {
+            tutorial = false
+            load()
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        load()
+        if (tutorial) showSamples() else load()
+    }
+
+    /** 튜토리얼용 샘플 목록. 서버에 저장되지 않으며 화면에만 표시한다. */
+    private fun showSamples() {
+        val now = java.time.LocalDate.now().toString()
+        render(listOf(
+            TrashItemDto("FOLDER", "sample-folder", getString(R.string.sample_folder), null, now),
+            TrashItemDto("DOCUMENT", "sample-doc-1", getString(R.string.sample_doc_deploy), null, now)
+        ))
     }
 
     private fun load(showOverlay: Boolean = true) {

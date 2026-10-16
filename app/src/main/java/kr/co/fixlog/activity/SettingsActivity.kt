@@ -30,6 +30,7 @@ import kr.co.fixlog.model.FileType
 import kr.co.fixlog.util.BottomNav
 import kr.co.fixlog.util.TokenManager
 import kr.co.fixlog.util.WorkspaceManager
+import kr.co.fixlog.util.CoachMark
 import org.json.JSONObject
 
 /**
@@ -78,6 +79,10 @@ class SettingsActivity : AppCompatActivity() {
         setupThemeTabs()
         setupSharedTabs()
         loadAccount()
+        CoachMark.show(this, "settings",
+            CoachMark.Step(binding.tabTheme, R.string.coach_settings_theme),
+            CoachMark.Step(binding.cardWorkspace, R.string.coach_settings_workspace)
+        )
     }
 
     /** 테마 탭(시스템/라이트/다크) 배선. 현재 설정을 선택 상태로 반영하고, 변경 시 즉시 적용한다. */

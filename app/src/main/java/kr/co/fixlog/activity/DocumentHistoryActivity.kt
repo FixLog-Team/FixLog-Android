@@ -22,6 +22,7 @@ import kr.co.fixlog.data.remote.DocumentApi
 import kr.co.fixlog.databinding.ActivityDocumentHistoryBinding
 import kr.co.fixlog.util.HistoryTime
 import kr.co.fixlog.util.OwnerNames
+import kr.co.fixlog.util.CoachMark
 
 /**
  * 문서 버전 기록(웹 DocumentHistorySidePanel 대응). 문서 페이지의 더보기 → "버전 기록"에서 진입한다.
@@ -72,6 +73,7 @@ class DocumentHistoryActivity : AppCompatActivity() {
         }
 
         load(showProgress = true)
+        CoachMark.show(this, "history", CoachMark.Step(binding.swipeRefresh, R.string.coach_history_list))
     }
 
     private fun load(showProgress: Boolean) {

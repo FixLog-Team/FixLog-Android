@@ -26,6 +26,7 @@ import kr.co.fixlog.util.BottomNav
 import kr.co.fixlog.util.ConversationManager
 import kr.co.fixlog.util.Markdown
 import kr.co.fixlog.util.toAiMessage
+import kr.co.fixlog.util.CoachMark
 
 /**
  * AI 검색(대화방) 화면. 멀티턴 대화방 기반으로 질문/답변을 주고받는다.
@@ -47,6 +48,9 @@ class SearchActivity : AppCompatActivity() {
     /** 에디터 "이어서 대화"로 전달된 문서 컨텍스트. 첫 질문에 함께 실어 보낸 뒤 비운다. */
     private var pendingContext: String? = null
 
+    /** 코치마크 튜토리얼 중이면 서버 대화 대신 샘플 대화를 보여준다. 끝나면 원래 대화를 복원한다. */
+    private var tutorial = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -66,6 +70,16 @@ class SearchActivity : AppCompatActivity() {
         BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.SEARCH)
 
         handleIncomingContext(intent)
+        // 에디터 "이어서 대화"로 들어온 경우엔 그 대화를 가리지 않도록 튜토리얼을 다음 진입으로 미룬다.
+        tutorial = pendingContext == null && CoachMark.show(this, "search",
+            CoachMark.Step(binding.etSearch.parent as View, R.string.coach_search_input), // 아이콘·둥근 배경까지 포함한 입력 바 전체
+            CoachMark.Step(binding.btnConversations, R.string.coach_search_conversations)
+        ) {
+            tutorial = false
+            binding.llChat.removeAllViews()
+            binding.llEmpty.visibility = View.VISIBLE
+            restoreLastConversation()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -76,6 +90,22 @@ class SearchActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (tutorial) showSampleConversation() else restoreLastConversation()
+    }
+
+    /** 튜토리얼용 샘플 대화. 서버에 저장되지 않으며 화면에만 표시한다. */
+    private fun showSampleConversation() {
+        binding.llChat.removeAllViews()
+        binding.llEmpty.visibility = View.GONE
+        addQuestionBubble(getString(R.string.sample_search_question))
+        addAnswerBubble(
+            getString(R.string.sample_search_answer),
+            listOf(SearchResultDto("sample-doc", getString(R.string.sample_editor_title), null,
+                getString(R.string.sample_editor_paragraph), null))
+        )
+    }
+
+    private fun restoreLastConversation() {
         // 컨텍스트로 새 대화를 막 시작한 경우엔 마지막 대화방을 복원하지 않는다.
         if (currentConversationId == null && pendingContext == null) {
             val last = ConversationManager.getLast(this)
