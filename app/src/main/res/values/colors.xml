@@ -36,4 +36,6 @@
     <color name="danger_red">#DC2626</color>
     <!-- 스낵바 액션 텍스트(스낵바 배경이 테마와 반대 톤이라 별도 지정) -->
     <color name="snackbar_action">#8AB4FF</color>
+    <!-- 스켈레톤 로딩 블록. 배경과 구분되도록 muted_bg보다 진하게. -->
+    <color name="skeleton">#E3E6EB</color>
 </resources>
