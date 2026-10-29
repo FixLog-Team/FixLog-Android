@@ -17,11 +17,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kr.co.fixlog.R
+import kr.co.fixlog.data.remote.BulkApi
 import kr.co.fixlog.data.remote.DocumentApi
 import java.io.IOException
 
 /**
- * 문서 PDF 다운로드(웹의 useDownloadDocument 대응).
+ * 문서 PDF 다운로드(웹의 useDownloadDocument 대응) + 선택 항목 일괄 ZIP 다운로드(useBulkDownload 대응).
  *  - GET /api/documents/{id}/download 로 서버가 만든 PDF를 받아
  *  - 기기의 "다운로드/FixLog" 폴더에 "{제목}.pdf"로 저장한다(MediaStore — 저장 권한 불필요).
  *  - 같은 이름이 있으면 시스템이 "(1)" 등을 붙여 구분한다.
@@ -32,16 +33,30 @@ object DocumentDownloader {
     private const val TAG = "DocumentDownloader"
     private const val SUB_DIR = "FixLog"
 
-    fun download(activity: AppCompatActivity, scope: CoroutineScope, documentId: String, title: String) {
+    fun download(activity: AppCompatActivity, scope: CoroutineScope, documentId: String, title: String) =
+        run(activity, scope, fileNameOf(title.ifBlank { documentId }), "application/pdf") {
+            DocumentApi.downloadPdf(documentId)
+        }
+
+    /** 선택 항목 일괄 다운로드(ZIP, 폴더는 하위 포함). 웹과 같은 파일명 fixlog-bulk.zip 으로 저장한다. */
+    fun downloadBulk(activity: AppCompatActivity, scope: CoroutineScope, documentIds: List<String>, folderIds: List<String>) =
+        run(activity, scope, "fixlog-bulk.zip", "application/zip") {
+            BulkApi.download(documentIds, folderIds)
+        }
+
+    private fun run(
+        activity: AppCompatActivity,
+        scope: CoroutineScope,
+        fileName: String,
+        mimeType: String,
+        fetch: suspend () -> ByteArray
+    ) {
         LoadingIndicator.show(activity)
         scope.launch {
-            val result = runCatching {
-                val bytes = DocumentApi.downloadPdf(documentId)
-                save(activity, fileNameOf(title.ifBlank { documentId }), bytes)
-            }
+            val result = runCatching { save(activity, fileName, mimeType, fetch()) }
             LoadingIndicator.hide(activity)
             result
-                .onSuccess { uri -> showSaved(activity, uri) }
+                .onSuccess { uri -> showSaved(activity, uri, mimeType) }
                 .onFailure { e ->
                     Log.w(TAG, "다운로드 실패", e)
                     val msg = if ((e as? DocumentApi.HttpStatusException)?.status == 403)
@@ -58,12 +73,12 @@ object DocumentDownloader {
         return "${safe.ifBlank { "document" }}.pdf"
     }
 
-    private suspend fun save(activity: AppCompatActivity, fileName: String, bytes: ByteArray): Uri =
+    private suspend fun save(activity: AppCompatActivity, fileName: String, mimeType: String, bytes: ByteArray): Uri =
         withContext(Dispatchers.IO) {
             val resolver = activity.contentResolver
             val values = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+                put(MediaStore.Downloads.MIME_TYPE, mimeType)
                 put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/$SUB_DIR")
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
@@ -79,14 +94,14 @@ object DocumentDownloader {
             uri
         }
 
-    /** 저장 완료 안내 + "열기"(PDF 뷰어로 바로 열기). 하단 네비가 있으면 그 위에 띄운다. */
-    private fun showSaved(activity: AppCompatActivity, uri: Uri) {
+    /** 저장 완료 안내 + "열기"(해당 형식 뷰어로 바로 열기). 하단 네비가 있으면 그 위에 띄운다. */
+    private fun showSaved(activity: AppCompatActivity, uri: Uri, mimeType: String) {
         val root = activity.findViewById<View>(android.R.id.content)
         Snackbar.make(root, activity.getString(R.string.download_saved), Snackbar.LENGTH_LONG)
             .setActionTextColor(ContextCompat.getColor(activity, R.color.snackbar_action))
             .setAction(activity.getString(R.string.common_open_file)) {
                 val view = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "application/pdf")
+                    setDataAndType(uri, mimeType)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 try {

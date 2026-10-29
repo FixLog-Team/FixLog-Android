@@ -5,9 +5,28 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="16dp"
+    android:paddingStart="8dp"
     android:paddingEnd="8dp"
     android:paddingVertical="12dp">
+
+    <!-- 깊이 들여쓰기(코드에서 width 지정) -->
+    <View
+        android:id="@+id/v_indent"
+        android:layout_width="0dp"
+        android:layout_height="1dp" />
+
+    <!-- 펼침 토글: 하위가 있는 폴더만 보이고 그 외엔 INVISIBLE(자리 유지) -->
+    <ImageView
+        android:id="@+id/iv_toggle"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="4dp"
+        android:padding="4dp"
+        android:src="@drawable/ic_arrow_right"
+        android:scaleType="fitCenter"
+        app:tint="@color/editor_meta"
+        android:contentDescription="@string/shared_tree_expand"
+        android:background="?attr/selectableItemBackgroundBorderless" />
 
     <ImageView
         android:id="@+id/iv_icon"

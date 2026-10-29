@@ -85,6 +85,12 @@ class FolderNavigationHelper(
         if (pathStack.isEmpty()) navigateToRoot() else loadCurrentFolder()
     }
 
+    /** 경로(루트→대상, (id, 이름) 목록)만 바꾼다. 로드는 호출 측이 [reload]로 한다(검색 결과의 깊은 폴더 열기용). */
+    fun setPath(path: List<Pair<String, String>>) {
+        pathStack.clear()
+        path.mapTo(pathStack) { PathEntry(it.first, it.second) }
+    }
+
     /** 외부에서 데이터 갱신을 트리거 (예: 새 폴더 생성 후). 현재 위치를 다시 로드한다. */
     fun reload() {
         if (pathStack.isEmpty()) navigateToRoot() else loadCurrentFolder()

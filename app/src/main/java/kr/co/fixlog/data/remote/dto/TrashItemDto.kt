@@ -9,5 +9,6 @@ data class TrashItemDto(
     val resourceId: String,
     val name: String?,
     val deletedBy: String?,
-    val deletedAt: String?
+    val deletedAt: String?,
+    val trashedParentId: String? = null   // 직계 부모 폴더도 휴지통이면 그 폴더 id, 최상위면 null
 )

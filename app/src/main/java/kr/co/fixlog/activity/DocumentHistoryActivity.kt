@@ -25,7 +25,8 @@ import kr.co.fixlog.util.OwnerNames
 import kr.co.fixlog.util.CoachMark
 
 /**
- * 문서 버전 기록(웹 DocumentHistorySidePanel 대응). 문서 페이지의 더보기 → "버전 기록"에서 진입한다.
+ * 문서 버전 기록(웹 DocumentHistorySidePanel 대응). 문서 목록/문서 작성 페이지의 더보기 → "버전 기록"에서 진입한다.
+ * 문서 작성 페이지에서 열면 현재 버전 → 그 에디터로 복귀, 복원하면 RESULT_OK 로 알려 에디터가 본문을 다시 불러온다.
  *  - 목록: GET /api/documents/{id}/history (최신순) + 현재 문서 메타(GET /api/documents/{id})
  *  - 버전 번호는 가장 오래된 버전이 v1 (웹과 동일: versionNo = 개수 - index)
  *  - 제목이 바로 다음(더 최신) 버전과 다르면 "제목 변경" 배지
@@ -43,6 +44,7 @@ class DocumentHistoryActivity : AppCompatActivity() {
         if (result.resultCode != RESULT_OK) return@registerForActivityResult
         val versionNo = result.data?.getIntExtra(HistoryPreviewActivity.EXTRA_VERSION_NO, 0) ?: 0
         Toast.makeText(this, getString(R.string.history_restored, versionNo), Toast.LENGTH_SHORT).show()
+        setResult(RESULT_OK)
         load(showProgress = true)
     }
 
@@ -142,7 +144,11 @@ class DocumentHistoryActivity : AppCompatActivity() {
     private fun onRowClick(row: Row.Version) {
         val historyId = row.historyId
         if (historyId == null) {
-            // 현재 버전 → 에디터로 열기
+            // 현재 버전 → 에디터로 열기(에디터에서 들어왔으면 그 에디터로 돌아간다)
+            if (intent.getBooleanExtra(EXTRA_FROM_EDITOR, false)) {
+                finish()
+                return
+            }
             startActivity(Intent(this, EditorActivity::class.java).apply {
                 putExtra(EditorActivity.EXTRA_FILE_ID, documentId)
                 putExtra(EditorActivity.EXTRA_FILE_NAME, docTitle)
@@ -158,10 +164,12 @@ class DocumentHistoryActivity : AppCompatActivity() {
         private const val TAG = "DocumentHistory"
         private const val EXTRA_DOCUMENT_ID = "document_id"
         private const val EXTRA_TITLE = "title"
+        private const val EXTRA_FROM_EDITOR = "from_editor"
 
-        fun intent(context: Context, documentId: String, title: String): Intent =
+        fun intent(context: Context, documentId: String, title: String, fromEditor: Boolean = false): Intent =
             Intent(context, DocumentHistoryActivity::class.java)
                 .putExtra(EXTRA_DOCUMENT_ID, documentId)
                 .putExtra(EXTRA_TITLE, title)
+                .putExtra(EXTRA_FROM_EDITOR, fromEditor)
     }
 }

@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kr.co.fixlog.data.remote.dto.ApiResponse
 import kr.co.fixlog.data.remote.dto.TrashItemDto
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -14,7 +15,7 @@ import java.lang.reflect.Type
 /**
  * 휴지통 API (FRONTEND_API_GUIDE 11장).
  *   GET    /api/trash                               → [list]
- *   POST   /api/trash/{resourceType}/{id}/restore   → [restore] (부모가 휴지통이면 루트로 복원)
+ *   POST   /api/trash/{resourceType}/{id}/restore   → [restore] (부모가 휴지통이면 targetFolderId 위치로, 없으면 루트로 복원)
  *   DELETE /api/trash/{resourceType}/{id}           → [purge]   (영구 삭제, 복구 불가)
  *
  * resourceType: "FOLDER" | "DOCUMENT".
@@ -28,10 +29,13 @@ object TrashApi {
         return execute(request, listType)
     }
 
-    suspend fun restore(resourceType: String, resourceId: String) {
+    /** [targetFolderId]: 복원 위치(이동 + 복원). null 이면 body 없이 보내 루트(또는 원래 위치)로 복원. */
+    suspend fun restore(resourceType: String, resourceId: String, targetFolderId: String? = null) {
+        val body = if (targetFolderId == null) ByteArray(0).toRequestBody(null)
+        else JSONObject().put("targetFolderId", targetFolderId).toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("${ApiClient.BASE_URL}$PATH/$resourceType/$resourceId/restore")
-            .post(ByteArray(0).toRequestBody(null))
+            .post(body)
             .build()
         executeUnit(request)
     }

@@ -17,6 +17,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kr.co.fixlog.R
+import kr.co.fixlog.data.remote.ImageApi
 import kr.co.fixlog.bridge.EditorBridge
 import kr.co.fixlog.data.remote.DocumentApi
 import kr.co.fixlog.databinding.ActivityHistoryPreviewBinding
@@ -76,6 +77,9 @@ class HistoryPreviewActivity : AppCompatActivity() {
             domStorageEnabled = true
         }
         binding.webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(view: WebView?, request: android.webkit.WebResourceRequest): android.webkit.WebResourceResponse? =
+                ImageApi.intercept(request) ?: super.shouldInterceptRequest(view, request)
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 val lang = resources.configuration.locales[0].language

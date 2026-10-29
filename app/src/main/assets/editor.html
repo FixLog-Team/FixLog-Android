@@ -555,6 +555,44 @@
             } catch (e) { console.error(e); }
         };
 
+        // 네이티브가 이미지 업로드 후 호출: 조회용 API URL 로 image 블록을 커서 블록 뒤에 넣는다.
+        // 커서 블록이 빈 문단이면 그 자리를 이미지로 바꾼다(빈 줄이 남지 않도록).
+        window.insertImage = (url, name) => {
+            try {
+                if (!editor || !url) return;
+                const spec = { type: "image", props: { url, name: name || "" } };
+                const block = editor.getTextCursorPosition()?.block;
+                if (!block) {
+                    const doc = editor.document;
+                    editor.insertBlocks([spec], doc[doc.length - 1], "after");
+                } else if (block.type === "paragraph" && !getCurrentBlockText()) {
+                    editor.updateBlock(block, spec);
+                } else {
+                    editor.insertBlocks([spec], block, "after");
+                }
+            } catch (e) { console.error("insertImage", e); }
+        };
+
+        // 본문 아래 빈 영역(body/html 또는 #editor 여백)을 탭하면 문서 끝에 커서를 둔다.
+        // 마지막 블록이 이미지·표처럼 글자를 넣을 수 없는 블록이면 빈 문단을 하나 덧붙인다.
+        document.addEventListener("click", (e) => {
+            try {
+                if (!editor || readOnly) return;
+                const t = e.target;
+                const blank = t === document.documentElement || t === document.body
+                    || (t.closest("#editor") && !t.closest(".ProseMirror"));
+                const area = document.getElementById("editor").getBoundingClientRect();
+                if (!blank || e.clientY < area.top) return;
+                const doc = editor.document;
+                let last = doc[doc.length - 1];
+                if (!Array.isArray(last.content)) {
+                    last = editor.insertBlocks([{ type: "paragraph" }], last, "after")[0];
+                }
+                editor.setTextCursorPosition(last, "end");
+                editor.focus();
+            } catch (err) { console.error("focusEnd", err); }
+        });
+
         window.toggleStyle = (style) => {
             try {
                 if (!editor) return;

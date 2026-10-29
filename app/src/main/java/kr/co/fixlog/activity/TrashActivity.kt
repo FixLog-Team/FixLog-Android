@@ -14,17 +14,19 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.coroutines.launch
 import kr.co.fixlog.R
 import kr.co.fixlog.adapter.TrashAdapter
+import kr.co.fixlog.data.remote.FolderApi
 import kr.co.fixlog.data.remote.TrashApi
 import kr.co.fixlog.data.remote.dto.TrashItemDto
 import kr.co.fixlog.databinding.ActivityTrashBinding
 import kr.co.fixlog.util.BottomNav
 import kr.co.fixlog.util.LoadingIndicator
 import kr.co.fixlog.util.CoachMark
+import kr.co.fixlog.util.FolderPickerDialog
 
 /**
  * 휴지통(/trash) 화면. 삭제된 폴더·문서를 복원하거나 영구 삭제한다.
  *  - 목록: GET /api/trash
- *  - 복원: POST /api/trash/{type}/{id}/restore
+ *  - 복원: POST /api/trash/{type}/{id}/restore (상위 폴더도 휴지통인 항목은 복원 위치를 골라 targetFolderId 로 보냄)
  *  - 영구삭제: DELETE /api/trash/{type}/{id} (확인 팝업)
  */
 class TrashActivity : AppCompatActivity() {
@@ -108,8 +110,26 @@ class TrashActivity : AppCompatActivity() {
     }
 
     private fun restore(item: TrashItemDto) {
+        // 상위 폴더가 휴지통이라 원래 위치가 없으면(문서·폴더 모두): 폴더 선택 팝업으로 복원 위치를 받는다.
+        if (item.trashedParentId != null) {
+            lifecycleScope.launch {
+                val tree = runCatching { FolderApi.getFolderTree() }.getOrElse { e ->
+                    Log.w(TAG, "폴더 트리 조회 실패", e)
+                    toast(getString(R.string.actions_load_folders_failed))
+                    return@launch
+                }
+                FolderPickerDialog.show(this@TrashActivity, getString(R.string.trash_select_restore_folder), tree) { destId ->
+                    restore(item, destId)
+                }
+            }
+            return
+        }
+        restore(item, null)
+    }
+
+    private fun restore(item: TrashItemDto, targetFolderId: String?) {
         lifecycleScope.launch {
-            runCatching { TrashApi.restore(item.resourceType, item.resourceId) }
+            runCatching { TrashApi.restore(item.resourceType, item.resourceId, targetFolderId) }
                 .onSuccess {
                     toast(getString(R.string.trash_restored))
                     load()
@@ -125,7 +145,8 @@ class TrashActivity : AppCompatActivity() {
         val name = item.name?.ifBlank { null } ?: getString(R.string.trash_this_item)
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.trash_purge))
-            .setMessage(getString(R.string.trash_purge_confirm, name))
+            .setMessage(getString(R.string.trash_purge_confirm, name) +
+                if (item.resourceType.equals("FOLDER", ignoreCase = true)) getString(R.string.trash_purge_folder_extra) else "")
             .setNegativeButton(getString(R.string.common_cancel), null)
             .setPositiveButton(getString(R.string.trash_purge)) { _, _ -> purge(item) }
             .show()

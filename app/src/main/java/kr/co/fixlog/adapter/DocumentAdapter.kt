@@ -18,6 +18,7 @@ import kr.co.fixlog.model.FileType
  *
  * - 행 클릭: 폴더는 [onFolderClick](하위 이동), 문서는 [onFileClick](에디터 열기).
  * - 더보기 클릭: [onMoreClick](이름 변경/이동/삭제 팝업).
+ * - 선택 모드([setSelection] 에 집합 전달): 왼쪽 체크박스 표시, 행 클릭은 [onToggleSelect], 더보기 숨김.
  */
 class DocumentAdapter(
     private var items: List<FileItem> = emptyList(),
@@ -25,9 +26,19 @@ class DocumentAdapter(
     private val onFileClick: (FileItem) -> Unit,
     // 더보기 버튼 클릭. null이면 더보기 버튼 숨김.
     private val onMoreClick: ((FileItem) -> Unit)? = null,
-    // 롱클릭(선택). CRUD 액션 진입점. null이면 비활성.
-    private val onItemLongClick: ((FileItem) -> Unit)? = null
+    // 롱클릭. null이면 비활성.
+    private val onItemLongClick: ((FileItem) -> Unit)? = null,
+    // 선택 모드에서 행 클릭(선택 토글).
+    private val onToggleSelect: ((FileItem) -> Unit)? = null
 ) : RecyclerView.Adapter<DocumentAdapter.DocumentViewHolder>() {
+
+    /** 선택된 id 집합. null 이면 선택 모드가 아니다. */
+    private var selectedIds: Set<String>? = null
+
+    fun setSelection(ids: Set<String>?) {
+        selectedIds = ids
+        notifyDataSetChanged()
+    }
 
     /** 한 행에 표시할 최대 라벨 수(초과분은 +N 으로 축약). */
     private val maxLabels = 3
@@ -55,6 +66,7 @@ class DocumentAdapter(
         private val tvMeta: TextView = itemView.findViewById(R.id.tv_meta)
         private val llLabels: LinearLayout = itemView.findViewById(R.id.ll_labels)
         private val btnMore: ImageView = itemView.findViewById(R.id.btn_more)
+        private val cbSelect: ImageView = itemView.findViewById(R.id.cb_select)
 
         fun bind(item: FileItem) {
             tvName.text = item.name.ifBlank {
@@ -74,8 +86,15 @@ class DocumentAdapter(
                 }
             }
 
+            val selection = selectedIds
+            cbSelect.visibility = if (selection != null) View.VISIBLE else View.GONE
+            cbSelect.isSelected = selection?.contains(item.id) == true
+            if (selection != null) {
+                itemView.setOnClickListener { onToggleSelect?.invoke(item) }
+            }
+
             val moreClick = onMoreClick
-            if (moreClick != null) {
+            if (moreClick != null && selection == null) {
                 btnMore.visibility = View.VISIBLE
                 btnMore.setOnClickListener { moreClick(item) }
                 // 롱프레스 접근성 툴팁("자세히 보기") 억제 → 항상 더보기 메뉴만 뜨게 한다.

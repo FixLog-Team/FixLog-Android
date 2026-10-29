@@ -222,6 +222,8 @@
     <string name="trash_restore_failed">Restore failed: %1\$s</string>
     <string name="trash_this_item">this item</string>
     <string name="trash_purge">Delete permanently</string>
+    <string name="trash_select_restore_folder">Choose where to restore</string>
+    <string name="trash_purge_folder_extra">\nSubfolders and documents inside will also be permanently deleted.</string>
     <string name="trash_purge_confirm">Permanently delete \'%1\$s\'?\nThis can\'t be undone.</string>
     <string name="trash_purged">Permanently deleted</string>
     <string name="trash_purge_failed">Permanent delete failed: %1\$s</string>
@@ -231,7 +233,7 @@
     <string name="share_group_suffix"> (Group)</string>
     <string name="share_no_export_suffix"> · No export</string>
     <string name="tree_delete_folder_extra">\nSubfolders and documents will also be moved to the trash.</string>
-    <string name="tree_delete_confirm">Delete \'%1\$s\'?%2\$s\n\nIt will be moved to the trash. You can view and restore items from the trash on the web.</string>
+    <string name="tree_delete_confirm">Delete \'%1\$s\'?%2\$s\n\nIt will be moved to the trash.</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
@@ -262,7 +264,7 @@
     <string name="common_open_file">Open</string>
     <string name="download_failed">Download failed. Please try again later.</string>
     <string name="download_forbidden">You don\'t have permission to download this document.</string>
-    <string name="download_no_viewer">No app found to open PDFs.</string>
+    <string name="download_no_viewer">No app found to open this file.</string>
     <string name="history_title">Version history</string>
     <string name="history_current_section">Current version</string>
     <string name="history_previous_section">Previous versions</string>
@@ -324,4 +326,24 @@
     <string name="sample_editor_check_todo">Tune connection pool size and timeouts</string>
     <string name="sample_search_question">Why does the API time out during peak hours?</string>
     <string name="sample_search_answer">Slow queries hold DB connections too long, so the **connection pool runs out**.\n\n- Add indexes for slow queries\n- Tune connection pool size and timeouts\n\nSee the document below for details.</string>
+    <string name="docs_search_hint">Search by title</string>
+    <string name="docs_search_clear">Clear search</string>
+    <string name="docs_search_empty">No results found.</string>
+    <string name="docs_search_failed">Search failed: %1$s</string>
+    <string name="docs_selected_count">%1$d selected</string>
+    <string name="docs_select_all">Select all</string>
+    <string name="docs_select_done">Close</string>
+    <string name="docs_select_none">Nothing selected</string>
+    <string name="docs_bulk_delete_title">Delete selected items?</string>
+    <string name="docs_bulk_delete_message">%1$d selected items will be moved to the trash.\nItems inside folders will also be deleted.</string>
+    <string name="docs_bulk_deleted">Deleted %1$d items</string>
+    <string name="docs_bulk_moved">Moved %1$d items</string>
+    <string name="docs_bulk_partial">%2$d of %1$d done · %3$d failed</string>
+    <string name="docs_bulk_failed">Bulk action failed: %1$s</string>
+    <string name="docs_bulk_download_limit">You can download up to %1$d documents and %2$d folders at once.</string>
+    <string name="cmd_image">Image</string>
+    <string name="editor_image_empty">Empty files can\'t be uploaded.</string>
+    <string name="editor_image_invalid_type">Only JPG, PNG, GIF, WebP and SVG images can be uploaded.</string>
+    <string name="editor_image_too_large">Image is too large. GIF/SVG must be 1MB or smaller, other images 10MB or smaller.</string>
+    <string name="editor_image_upload_failed">Image upload failed: %1$s</string>
 </resources>

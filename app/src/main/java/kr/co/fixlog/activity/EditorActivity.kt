@@ -2,6 +2,10 @@ package kr.co.fixlog.activity
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.provider.OpenableColumns
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,6 +20,8 @@ import androidx.core.widget.doAfterTextChanged
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -29,13 +35,17 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.CircularProgressIndicatorSpec
 import com.google.android.material.progressindicator.IndeterminateDrawable
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kr.co.fixlog.R
+import java.io.ByteArrayOutputStream
 import kr.co.fixlog.adapter.CommandBarAdapter
 import kr.co.fixlog.bridge.EditorBridge
 import kr.co.fixlog.data.remote.AiApi
 import kr.co.fixlog.data.remote.DocumentApi
+import kr.co.fixlog.data.remote.ImageApi
 import kr.co.fixlog.data.remote.dto.DocumentDto
 import kr.co.fixlog.databinding.ActivityEditorBinding
 import kr.co.fixlog.util.BottomNav
@@ -64,6 +74,16 @@ class EditorActivity : AppCompatActivity() {
     private var tagsCache: Pair<String, List<String>>? = null
     /** 진행 중인 라벨 추천 요청 (본문, 결과). */
     private var tagsInFlight: Pair<String, Deferred<List<String>>>? = null
+
+    /** 커맨드 바 "이미지" → 사진 선택 결과. 선택하면 업로드 후 본문에 삽입한다. */
+    private val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) uploadImage(uri)
+    }
+
+    /** 버전 기록에서 복원하고 돌아오면 서버 본문/제목을 다시 불러온다(옛 본문이 저장돼 복원을 덮지 않도록). */
+    private val historyLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) fetchAndInjectMeta(syncTitle = true)
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     /** 코치마크 튜토리얼 중이면 키보드 없이도 커맨드 바를 보여주고, 샘플 문서를 띄우며 저장하지 않는다. */
@@ -513,7 +533,8 @@ class EditorActivity : AppCompatActivity() {
             DocumentActionsHelper.show(
                 this, lifecycleScope, id, title,
                 onChanged = { fetchAndInjectMeta() },
-                onRenamed = { newName -> binding.tvTitle.setText(newName) } // 앱바/본문 제목 즉시 반영
+                onRenamed = { newName -> binding.tvTitle.setText(newName) }, // 앱바/본문 제목 즉시 반영
+                onHistory = { historyLauncher.launch(DocumentHistoryActivity.intent(this, id, title, fromEditor = true)) }
             )
         }
     }
@@ -548,6 +569,9 @@ class EditorActivity : AppCompatActivity() {
             allowFileAccess = true
         }
         binding.webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest): android.webkit.WebResourceResponse? =
+                ImageApi.intercept(request) ?: super.shouldInterceptRequest(view, request)
+
             override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 // 앱 로케일을 에디터(WebView)에 전달해 슬래시 메뉴/플레이스홀더 등을 해당 언어로 표시.
@@ -611,10 +635,88 @@ class EditorActivity : AppCompatActivity() {
                     CommandBarAdapter.Kind.STYLE -> evalEditorJs("window.toggleStyle && window.toggleStyle('${cmd.id}');")
                     CommandBarAdapter.Kind.INDENT -> evalEditorJs("window.indentBlock && window.indentBlock();")
                     CommandBarAdapter.Kind.OUTDENT -> evalEditorJs("window.unindentBlock && window.unindentBlock();")
+                    CommandBarAdapter.Kind.IMAGE -> pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     else -> executeSlashCommand(cmd.id)
                 }
             }
         }
+    }
+
+    /**
+     * 선택한 이미지를 검증(형식·크기) → POST /api/images/upload → 결과 url 로 image 블록 삽입(웹 ImageFilePanel 업로드 대응).
+     * 블록에는 Presigned URL 이 아닌 조회용 API URL 을 저장한다(서버가 매번 302 리다이렉트).
+     */
+    private fun uploadImage(uri: Uri) {
+        val mime = contentResolver.getType(uri).orEmpty()
+        var name = "image"
+        var size = -1L
+        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
+            if (c.moveToFirst()) {
+                if (!c.isNull(0)) name = c.getString(0)
+                if (!c.isNull(1)) size = c.getLong(1)
+            }
+        }
+        // 크기를 알 수 있으면 읽기 전에 거른다(큰 파일을 메모리에 올리지 않도록).
+        val invalid = when {
+            mime !in ImageApi.ALLOWED_TYPES -> R.string.editor_image_invalid_type
+            size > ImageApi.MAX_BYTES -> R.string.editor_image_too_large
+            else -> null
+        }
+        if (invalid != null) {
+            Toast.makeText(this, getString(invalid), Toast.LENGTH_SHORT).show()
+            return
+        }
+        launchWithLoading {
+            runCatching {
+                val bytes = withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } ?: throw java.io.IOException("이미지를 읽을 수 없습니다")
+                // 서버 앞단(nginx) 본문 한도가 1MB라 큰 사진은 WebP로 줄여서 올린다. GIF·SVG는 변환하지 않는다.
+                val shrunk = if (bytes.size > ImageApi.UPLOAD_LIMIT && mime in SHRINKABLE_TYPES) {
+                    withContext(Dispatchers.Default) { shrinkImage(uri) }
+                } else null
+                val upBytes = shrunk ?: bytes
+                when {
+                    upBytes.isEmpty() -> getString(R.string.editor_image_empty)
+                    upBytes.size > ImageApi.UPLOAD_LIMIT -> getString(R.string.editor_image_too_large)
+                    else -> {
+                        val upName = if (shrunk != null) name.substringBeforeLast('.') + ".webp" else name
+                        val url = ImageApi.upload(upBytes, upName, if (shrunk != null) "image/webp" else mime).url
+                        evalEditorJs("window.insertImage && window.insertImage('${jsEscape(url)}', '${jsEscape(name)}');")
+                        null
+                    }
+                }
+            }.onSuccess { msg ->
+                if (msg != null) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            }.onFailure { e ->
+                Log.w(TAG, "이미지 업로드 실패", e)
+                Toast.makeText(this, getString(R.string.editor_image_upload_failed, e.message ?: getString(R.string.common_unknown_error)), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /** 긴 변을 줄여 가며 WebP로 다시 인코딩해 [ImageApi.UPLOAD_LIMIT] 이하로 만든다. 끝내 못 줄이면 null. */
+    private fun shrinkImage(uri: Uri): ByteArray? {
+        val source = ImageDecoder.createSource(contentResolver, uri)
+        var maxSide = 2048
+        while (maxSide >= 512) {
+            val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                val (w, h) = info.size.width to info.size.height
+                val scale = minOf(1f, maxSide.toFloat() / maxOf(w, h))
+                decoder.setTargetSize((w * scale).toInt().coerceAtLeast(1), (h * scale).toInt().coerceAtLeast(1))
+            }
+            try {
+                for (quality in intArrayOf(85, 70, 55)) {
+                    val out = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, quality, out)
+                    if (out.size() <= ImageApi.UPLOAD_LIMIT) return out.toByteArray()
+                }
+            } finally {
+                bitmap.recycle()
+            }
+            maxSide /= 2
+        }
+        return null
     }
 
     private fun evalEditorJs(script: String) {
@@ -625,7 +727,7 @@ class EditorActivity : AppCompatActivity() {
      * 서버에서 문서 메타를 조회해 WebView 헤더(작성자/수정일/제목)에 주입한다.
      * 실패(비로그인/문서없음/네트워크)해도 화면은 정상 — 제목/플레이스홀더가 유지된다.
      */
-    private fun fetchAndInjectMeta() {
+    private fun fetchAndInjectMeta(syncTitle: Boolean = false) {
         val fileId = intent.getStringExtra(EXTRA_FILE_ID) ?: return
         launchWithLoading {
             runCatching { DocumentApi.getDocument(fileId) }
@@ -633,6 +735,7 @@ class EditorActivity : AppCompatActivity() {
                     if (tutorial) return@onSuccess // 샘플 표시 중. 튜토리얼이 끝나면 다시 불러온다.
                     // 라벨은 별도 엔드포인트라 함께 조회해 헤더에 표시(실패해도 본문/메타는 정상).
                     val labels = runCatching { DocumentApi.getLabels(fileId) }.getOrDefault(emptyList())
+                    if (syncTitle) binding.tvTitle.setText(dto.title)
                     injectMeta(dto, labels)
                     injectContent(dto)
                 }
@@ -765,6 +868,7 @@ class EditorActivity : AppCompatActivity() {
         const val EXTRA_FILE_NAME = "file_name"
         private const val BRIDGE_NAME = "Android"
         private const val TAG = "EditorActivity"
+        private val SHRINKABLE_TYPES = setOf("image/jpeg", "image/png", "image/webp")
         private const val PREF_FAVORITES = "fixlog_favorites"
     }
 }

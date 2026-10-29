@@ -29,6 +29,7 @@ object DocumentActionsHelper {
     /**
      * 문서 액션 메뉴를 띄운다.
      * @param onChanged 성공적으로 변경(이름/이동/복제/삭제)된 뒤 호출 — 목록 새로고침 용도.
+     * @param onHistory 주면 "버전 기록" 항목을 보이고, 누르면 호출한다(결과를 받아야 하는 에디터용).
      */
     fun show(
         activity: AppCompatActivity,
@@ -36,14 +37,16 @@ object DocumentActionsHelper {
         documentId: String,
         title: String,
         onChanged: () -> Unit,
-        onRenamed: ((String) -> Unit)? = null
+        onRenamed: ((String) -> Unit)? = null,
+        onHistory: (() -> Unit)? = null
     ) {
-        val actions = listOf(
+        val actions = listOfNotNull(
             ActionMenuDialog.Action(activity.getString(R.string.common_rename), R.drawable.ic_edit) { showRenameDialog(activity, scope, documentId, title, onChanged, onRenamed) },
             ActionMenuDialog.Action(activity.getString(R.string.actions_duplicate), R.drawable.ic_copy) { runAction(activity, scope, activity.getString(R.string.actions_document_duplicated), activity.getString(R.string.actions_duplicate_failed), onChanged) { DocumentApi.duplicate(documentId) } },
             ActionMenuDialog.Action(activity.getString(R.string.common_move), R.drawable.ic_folder_move) { showMovePicker(activity, scope, documentId, onChanged) },
             ActionMenuDialog.Action(activity.getString(R.string.actions_share), R.drawable.ic_share) { ShareDialogHelper.show(activity, scope, "document", documentId, title) },
             ActionMenuDialog.Action(activity.getString(R.string.actions_download), R.drawable.ic_import) { DocumentDownloader.download(activity, scope, documentId, title) },
+            onHistory?.let { ActionMenuDialog.Action(activity.getString(R.string.history_title), R.drawable.ic_history) { it() } },
             ActionMenuDialog.Action(activity.getString(R.string.common_delete), R.drawable.ic_trash, danger = true) { confirmDelete(activity, scope, documentId, title, onChanged) }
         )
         ActionMenuDialog.show(activity, title.ifBlank { "Untitled" }, actions, R.drawable.ic_file)

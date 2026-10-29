@@ -13,7 +13,7 @@ import kr.co.fixlog.R
 
 /**
  * 키보드 위 커맨드 바(가로) 어댑터.
- * - 기본 목록: 블록 변환/삽입 커맨드 + "글자 수정"(서식 목록으로 전환) + "들여쓰기"/"내어쓰기".
+ * - 기본 목록: 블록 변환/삽입 커맨드 + "글자 수정"(서식 목록으로 전환) + "들여쓰기"/"내어쓰기" + "이미지"(사진 선택·업로드).
  * - 서식 목록: "뒤로가기"(기본 목록 복귀) + 굵게/기울임/밑줄/취소선/인라인 코드.
  * 목록 전환은 어댑터 내부에서 처리하고, 실제 동작은 [onClick]으로 위임한다.
  * BLOCK의 id는 editor.html의 window.executeSlashCommand(id), STYLE의 id는 window.toggleStyle(id)와 동일하다.
@@ -27,7 +27,7 @@ class CommandBarAdapter(
     override fun onAttachedToRecyclerView(rv: RecyclerView) { recyclerView = rv }
     override fun onDetachedFromRecyclerView(rv: RecyclerView) { recyclerView = null }
 
-    enum class Kind { BLOCK, STYLE, INDENT, OUTDENT, OPEN_STYLES, BACK }
+    enum class Kind { BLOCK, STYLE, INDENT, OUTDENT, OPEN_STYLES, BACK, IMAGE }
 
     /** (커맨드 id, 종류, 라벨 리소스, 아이콘 리소스). 아이콘 0이면 숨김. */
     data class Cmd(val id: String, val kind: Kind, val labelRes: Int, val iconRes: Int)
@@ -46,6 +46,7 @@ class CommandBarAdapter(
         Cmd("callout", Kind.BLOCK, R.string.cmd_callout, R.drawable.ic_sparkle),
         Cmd("codeBlock", Kind.BLOCK, R.string.cmd_code, R.drawable.ic_grid),
         Cmd("table", Kind.BLOCK, R.string.cmd_table, R.drawable.ic_grid),
+        Cmd("image", Kind.IMAGE, R.string.cmd_image, R.drawable.ic_image),
     )
 
     private val styleItems: List<Cmd> = listOf(

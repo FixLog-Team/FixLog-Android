@@ -225,6 +225,8 @@
     <string name="trash_restore_failed">복원 실패: %1\$s</string>
     <string name="trash_this_item">이 항목</string>
     <string name="trash_purge">영구 삭제</string>
+    <string name="trash_select_restore_folder">복원할 위치 선택</string>
+    <string name="trash_purge_folder_extra">\n폴더 안의 하위 폴더와 문서도 함께 영구 삭제됩니다.</string>
     <string name="trash_purge_confirm">\'%1\$s\'을(를) 영구 삭제할까요?\n삭제하면 복구할 수 없습니다.</string>
     <string name="trash_purged">영구 삭제했습니다</string>
     <string name="trash_purge_failed">영구 삭제 실패: %1\$s</string>
@@ -234,7 +236,7 @@
     <string name="share_group_suffix"> (그룹)</string>
     <string name="share_no_export_suffix"> · 반출금지</string>
     <string name="tree_delete_folder_extra">\n하위 폴더와 문서도 함께 휴지통으로 이동됩니다.</string>
-    <string name="tree_delete_confirm">\'%1\$s\'을(를) 삭제할까요?%2\$s\n\n휴지통으로 이동되며, 휴지통은 웹에서 확인·복원할 수 있어요.</string>
+    <string name="tree_delete_confirm">\'%1\$s\'을(를) 삭제할까요?%2\$s\n\n휴지통으로 이동됩니다.</string>
     <string name="settings_theme">테마</string>
     <string name="settings_theme_system">시스템</string>
     <string name="settings_theme_light">라이트</string>
@@ -265,7 +267,7 @@
     <string name="common_open_file">열기</string>
     <string name="download_failed">다운로드에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="download_forbidden">이 문서를 다운로드할 권한이 없습니다.</string>
-    <string name="download_no_viewer">PDF를 열 수 있는 앱이 없습니다.</string>
+    <string name="download_no_viewer">파일을 열 수 있는 앱이 없습니다.</string>
     <string name="history_title">버전 기록</string>
     <string name="history_current_section">현재 버전</string>
     <string name="history_previous_section">이전 버전</string>
@@ -327,4 +329,24 @@
     <string name="sample_editor_check_todo">커넥션 풀 크기와 타임아웃 재조정</string>
     <string name="sample_search_question">피크 시간에 API가 타임아웃 나는 원인이 뭐야?</string>
     <string name="sample_search_answer">느린 쿼리가 DB 커넥션을 오래 붙잡아 **커넥션 풀이 고갈**된 것이 원인이에요.\n\n- 느린 쿼리에 인덱스 추가\n- 커넥션 풀 크기와 타임아웃 재조정\n\n자세한 내용은 아래 문서를 참고하세요.</string>
+    <string name="docs_search_hint">제목으로 검색</string>
+    <string name="docs_search_clear">검색어 지우기</string>
+    <string name="docs_search_empty">검색 결과가 없습니다.</string>
+    <string name="docs_search_failed">검색에 실패했습니다: %1$s</string>
+    <string name="docs_selected_count">%1$d개 선택됨</string>
+    <string name="docs_select_all">전체 선택</string>
+    <string name="docs_select_done">닫기</string>
+    <string name="docs_select_none">선택한 항목이 없습니다</string>
+    <string name="docs_bulk_delete_title">선택한 항목을 삭제할까요?</string>
+    <string name="docs_bulk_delete_message">선택한 %1$d개 항목을 휴지통으로 보냅니다.\n폴더는 그 안의 하위 항목도 함께 삭제됩니다.</string>
+    <string name="docs_bulk_deleted">%1$d개를 삭제했어요</string>
+    <string name="docs_bulk_moved">%1$d개를 이동했어요</string>
+    <string name="docs_bulk_partial">%1$d개 중 %2$d개 완료 · %3$d개 실패</string>
+    <string name="docs_bulk_failed">일괄 작업에 실패했어요: %1$s</string>
+    <string name="docs_bulk_download_limit">한 번에 문서 %1$d개·폴더 %2$d개까지 다운로드할 수 있어요.</string>
+    <string name="cmd_image">이미지</string>
+    <string name="editor_image_empty">빈 파일은 업로드할 수 없어요.</string>
+    <string name="editor_image_invalid_type">JPG, PNG, GIF, WebP, SVG 이미지만 업로드할 수 있어요.</string>
+    <string name="editor_image_too_large">이미지가 너무 커요. GIF·SVG는 1MB, 그 외 이미지는 10MB 이하만 올릴 수 있어요.</string>
+    <string name="editor_image_upload_failed">이미지 업로드에 실패했어요: %1$s</string>
 </resources>

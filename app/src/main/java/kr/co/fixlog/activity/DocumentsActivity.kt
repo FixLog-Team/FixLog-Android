@@ -6,28 +6,40 @@ import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kr.co.fixlog.R
 import kr.co.fixlog.adapter.DocumentAdapter
+import kr.co.fixlog.data.remote.BulkApi
 import kr.co.fixlog.data.remote.DocumentApi
 import kr.co.fixlog.data.remote.FolderApi
+import kr.co.fixlog.data.remote.SearchApi
+import kr.co.fixlog.data.remote.dto.BulkResultDto
 import kr.co.fixlog.data.remote.dto.FolderRequest
+import kr.co.fixlog.data.remote.dto.FolderTreeDto
 import kr.co.fixlog.databinding.ActivityDocumentsBinding
 import kr.co.fixlog.helper.FolderNavigationHelper
 import kr.co.fixlog.model.FileItem
 import kr.co.fixlog.model.FileType
 import kr.co.fixlog.util.BottomNav
+import kr.co.fixlog.util.DocumentDownloader
+import kr.co.fixlog.util.FolderPickerDialog
+import kr.co.fixlog.util.LoadingIndicator
 import kr.co.fixlog.util.OwnerNames
 import kr.co.fixlog.util.TreeItemActionsHelper
 import kr.co.fixlog.util.CoachMark
@@ -40,6 +52,8 @@ import kr.co.fixlog.util.CoachMark
  *   - 폴더 클릭 → 하위로 이동, 문서 클릭 → 에디터.
  *   - 브레드크럼 세그먼트 클릭 → 해당 위치로 이동.
  *   - 더보기 → 이름 변경/이동/삭제 팝업([TreeItemActionsHelper]).
+ *   - 길게 누르기 → 다중 선택 모드(왼쪽 체크박스 + 하단 기능바: 전체 선택/이동/다운로드/삭제).
+ * - 상단 검색창: 폴더명 + 문서 제목 검색(GET /search/title, 워크스페이스 전체). 입력 중에는 검색 결과만 보인다.
  *
  * 다른 화면(Home)에서 특정 폴더로 진입시키려면 EXTRA_FOLDER_ID/NAME을 넘긴다.
  */
@@ -78,6 +92,18 @@ class DocumentsActivity : AppCompatActivity() {
     /** 코치마크 튜토리얼 중이면 서버 대신 샘플 목록을 보여준다. 끝나면 실제 목록을 로드한다. */
     private var tutorial = false
 
+    /** 현재 검색어(trim). 비어 있지 않으면 목록은 검색 결과다. */
+    private var searchQuery = ""
+    private var searchJob: Job? = null
+
+    /** 다중 선택된 id. null 이면 선택 모드가 아니다. */
+    private var selectedIds: MutableSet<String>? = null
+
+    /** 선택 모드에서 뒤로가기 → 선택 모드 종료. */
+    private val selectionBack = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = exitSelection()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -90,6 +116,9 @@ class DocumentsActivity : AppCompatActivity() {
         }
 
         setupBrowser()
+        setupSearch()
+        setupBulkBar()
+        onBackPressedDispatcher.addCallback(this, selectionBack)
         binding.btnFilter.setOnClickListener { showFilterDialog() }
         binding.btnAdd.setOnClickListener { showCreateMenu() }
         BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.DOCS)
@@ -128,6 +157,10 @@ class DocumentsActivity : AppCompatActivity() {
 
     private fun loadBrowser() {
         loadAccessScope()
+        if (searchQuery.isNotEmpty()) {
+            refresh()
+            return
+        }
         if (favoritesOnly) {
             browserInitialized = true
             loadFavorites()
@@ -223,6 +256,8 @@ class DocumentsActivity : AppCompatActivity() {
         binding.btnFilter.setColorFilter(
             ContextCompat.getColor(this, if (on) R.color.editor_blue else R.color.editor_meta)
         )
+        exitSelection()
+        if (searchQuery.isNotEmpty()) return // 검색 중엔 검색 결과 우선(웹과 동일). 검색 종료 시 반영된다.
         if (on) {
             binding.breadcrumbScroll.visibility = View.GONE
             loadFavorites()
@@ -293,7 +328,11 @@ class DocumentsActivity : AppCompatActivity() {
 
     /** 필터/기타 화면 상태에 맞춘 새로고침. */
     private fun refresh() {
-        if (favoritesOnly) loadFavorites() else folderNav.reload()
+        when {
+            searchQuery.isNotEmpty() -> lifecycleScope.launch { runSearch() }
+            favoritesOnly -> loadFavorites()
+            else -> folderNav.reload()
+        }
     }
 
     /** 즐겨찾기한 문서만 플랫 리스트로 로드(GET /api/documents/favorites) 후 메타 보강. */
@@ -315,6 +354,7 @@ class DocumentsActivity : AppCompatActivity() {
                     labels = doc.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty()
                 )
             }
+            if (searchQuery.isNotEmpty()) return@launch
             loadGeneration++
             currentItems = items
             if (items.isEmpty()) {
@@ -330,10 +370,11 @@ class DocumentsActivity : AppCompatActivity() {
 
     private fun setupBrowser() {
         browserAdapter = DocumentAdapter(
-            onFolderClick = { folder -> folderNav.navigateInto(folder) },
+            onFolderClick = { folder -> openFolder(folder) },
             onFileClick = { file -> openEditor(file.id, file.name) },
             onMoreClick = { item -> showItemActions(item) },
-            onItemLongClick = { item -> showItemActions(item) }
+            onItemLongClick = { item -> onItemLongClick(item) },
+            onToggleSelect = { item -> toggleSelect(item) }
         )
         binding.rvBrowser.apply {
             layoutManager = LinearLayoutManager(this@DocumentsActivity)
@@ -357,10 +398,14 @@ class DocumentsActivity : AppCompatActivity() {
             ).show()
         }
         folderNav.onNavigationChanged = { items, _, _ ->
-            loadGeneration++
             rawItems = items
             renderBreadcrumb()
-            applyAccessAndRender(loadGeneration)
+            exitSelection()
+            // 검색 중에 늦게 도착한 폴더 응답은 검색 결과를 덮지 않는다(검색 종료 시 다시 로드).
+            if (searchQuery.isEmpty()) {
+                loadGeneration++
+                applyAccessAndRender(loadGeneration)
+            }
         }
     }
 
@@ -453,7 +498,246 @@ class DocumentsActivity : AppCompatActivity() {
         )
     }
 
-    /** 더보기(⋮)/롱클릭 → 이름 변경/이동/삭제 팝업. 성공 시 현재 화면 상태에 맞춰 새로고침. */
+    // ---------------------------------------------------------------------
+    // 검색
+    // ---------------------------------------------------------------------
+
+    /** 입력을 300ms 디바운스해 제목 검색. 지우면 원래 목록(폴더/즐겨찾기)으로 돌아간다. */
+    private fun setupSearch() {
+        binding.etSearch.doAfterTextChanged { text ->
+            binding.btnClearSearch.visibility = if (text.isNullOrEmpty()) View.GONE else View.VISIBLE
+            val q = text?.toString()?.trim().orEmpty()
+            if (q == searchQuery) return@doAfterTextChanged
+            searchQuery = q
+            searchJob?.cancel()
+            exitSelection()
+            if (q.isEmpty()) {
+                binding.tvEmpty.visibility = View.GONE
+                binding.breadcrumbScroll.visibility = if (favoritesOnly) View.GONE else View.VISIBLE
+                refresh()
+            } else {
+                binding.breadcrumbScroll.visibility = View.GONE
+                searchJob = lifecycleScope.launch {
+                    delay(300)
+                    runSearch()
+                }
+            }
+        }
+        binding.etSearch.setOnEditorActionListener { _, _, _ ->
+            hideKeyboard()
+            true
+        }
+        binding.btnClearSearch.setOnClickListener { binding.etSearch.text = null }
+    }
+
+    /** GET /search/title. 권한 필터는 서버가 적용하므로 접근 필터 없이, 소유자 이름만 해석해 표시한다. */
+    private suspend fun runSearch() {
+        val q = searchQuery
+        if (q.isEmpty()) return
+        showSkeleton()
+        val generation = ++loadGeneration
+        val result = runCatching {
+            val found = SearchApi.searchTitle(q)
+            val ownerNames = OwnerNames.load(this)
+            found.folders.map {
+                FileItem(
+                    id = it.folderId,
+                    name = it.folderName,
+                    type = FileType.FOLDER,
+                    date = (it.updateTime ?: it.createTime)?.take(10).orEmpty(),
+                    parentId = it.parentId,
+                    owner = OwnerNames.resolve(ownerNames, it.createUser),
+                    createUser = it.createUser
+                )
+            } + found.documents.map {
+                FileItem(
+                    id = it.documentId,
+                    name = it.title,
+                    type = FileType.FILE,
+                    date = (it.updateTime ?: it.createTime)?.take(10).orEmpty(),
+                    parentId = it.folderId,
+                    owner = it.createUserName ?: OwnerNames.resolve(ownerNames, it.createUser),
+                    createUser = it.createUser,
+                    labels = it.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty()
+                )
+            }
+        }
+        // 그 사이 검색어가 바뀌었거나 다른 목록이 로드됐으면 버린다.
+        if (generation != loadGeneration || q != searchQuery) return
+        result
+            .onSuccess { items ->
+                currentItems = items
+                browserAdapter.updateItems(items)
+                binding.tvEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+            }
+            .onFailure { e ->
+                Log.w(TAG, "제목 검색 실패", e)
+                toast(getString(R.string.docs_search_failed, e.message ?: getString(R.string.common_unknown_error)))
+            }
+        hideSkeleton()
+    }
+
+    /**
+     * 폴더 열기. 검색 결과의 폴더면 트리에서 전체 경로를 찾아 그 위치로 이동하고 검색을 끝낸다
+     * (검색어 지우기 → refresh 가 새 경로를 로드). 트리에서 못 찾으면 그 폴더만 경로로 쓴다.
+     */
+    private fun openFolder(folder: FileItem) {
+        if (searchQuery.isEmpty()) {
+            folderNav.navigateInto(folder)
+            return
+        }
+        lifecycleScope.launch {
+            val tree = runCatching { FolderApi.getFolderTree() }.getOrNull().orEmpty()
+            folderNav.setPath(findFolderPath(tree, folder.id) ?: listOf(folder.id to folder.name))
+            if (favoritesOnly) applyFavoritesFilter(false)
+            hideKeyboard()
+            binding.etSearch.text = null
+        }
+    }
+
+    /** 폴더 트리에서 targetId 까지의 경로(루트→대상, (id, 이름)). 없으면 null. */
+    private fun findFolderPath(nodes: List<FolderTreeDto>, targetId: String): List<Pair<String, String>>? {
+        for (node in nodes) {
+            val self = node.folderId to node.folderName
+            if (node.folderId == targetId) return listOf(self)
+            findFolderPath(node.children, targetId)?.let { return listOf(self) + it }
+        }
+        return null
+    }
+
+    private fun hideKeyboard() {
+        binding.etSearch.clearFocus()
+        WindowCompat.getInsetsController(window, binding.etSearch).hide(WindowInsetsCompat.Type.ime())
+    }
+
+    // ---------------------------------------------------------------------
+    // 다중 선택 + 일괄 작업(/api/bulk)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 길게 누르기: 그 항목을 선택하며 선택 모드로 들어간다(이미 선택 모드면 토글). 검색 결과에서도 가능.
+     * 즐겨찾기 필터 중에는 다중 선택을 막고 기존처럼 항목 메뉴를 띄운다.
+     */
+    private fun onItemLongClick(item: FileItem) {
+        when {
+            selectedIds != null -> toggleSelect(item)
+            favoritesOnly -> showItemActions(item)
+            else -> {
+                selectedIds = mutableSetOf(item.id)
+                renderSelection()
+            }
+        }
+    }
+
+    private fun toggleSelect(item: FileItem) {
+        val selected = selectedIds ?: return
+        if (!selected.remove(item.id)) selected.add(item.id)
+        renderSelection()
+    }
+
+    private fun exitSelection() {
+        if (selectedIds == null) return
+        selectedIds = null
+        renderSelection()
+    }
+
+    /** 체크박스/제목("N개 선택됨")/하단 기능바 ↔ 하단 네비 전환. */
+    private fun renderSelection() {
+        val selected = selectedIds
+        browserAdapter.setSelection(selected?.toSet())
+        binding.tvTitle.text = if (selected == null) getString(R.string.nav_docs)
+        else getString(R.string.docs_selected_count, selected.size)
+        binding.bulkBar.visibility = if (selected != null) View.VISIBLE else View.GONE
+        binding.bottomNav.root.visibility = if (selected != null) View.GONE else View.VISIBLE
+        selectionBack.isEnabled = selected != null
+    }
+
+    private fun setupBulkBar() {
+        binding.btnBulkAll.setOnClickListener {
+            val selected = selectedIds ?: return@setOnClickListener
+            val all = currentItems.map { it.id }
+            if (selected.containsAll(all)) selected.clear() else selected.addAll(all)
+            renderSelection()
+        }
+        binding.btnBulkMove.setOnClickListener { bulkMove() }
+        binding.btnBulkDownload.setOnClickListener { bulkDownload() }
+        binding.btnBulkDelete.setOnClickListener { bulkDelete() }
+        binding.btnBulkClose.setOnClickListener { exitSelection() }
+    }
+
+    /** 선택 항목을 (문서 id, 폴더 id)로 나눈다. 없으면 안내 후 null. */
+    private fun selectedTargets(): Pair<List<String>, List<String>>? {
+        val selected = selectedIds ?: return null
+        val items = currentItems.filter { it.id in selected }
+        if (items.isEmpty()) {
+            toast(getString(R.string.docs_select_none))
+            return null
+        }
+        val (docs, folders) = items.partition { it.type == FileType.FILE }
+        return docs.map { it.id } to folders.map { it.id }
+    }
+
+    /** 이동 위치 선택(선택한 폴더와 그 하위는 후보에서 제외) 후 일괄 이동. */
+    private fun bulkMove() {
+        val (docIds, folderIds) = selectedTargets() ?: return
+        lifecycleScope.launch {
+            val tree = runCatching { FolderApi.getFolderTree() }.getOrElse { e ->
+                Log.w(TAG, "폴더 트리 조회 실패", e)
+                toast(getString(R.string.actions_load_folders_failed))
+                return@launch
+            }
+            FolderPickerDialog.show(this@DocumentsActivity, getString(R.string.actions_select_move_destination), tree, folderIds.toSet()) { destId ->
+                runBulk(R.string.docs_bulk_moved) { BulkApi.move(docIds, folderIds, destId) }
+            }
+        }
+    }
+
+    private fun bulkDelete() {
+        val (docIds, folderIds) = selectedTargets() ?: return
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.docs_bulk_delete_title))
+            .setMessage(getString(R.string.docs_bulk_delete_message, docIds.size + folderIds.size))
+            .setNegativeButton(getString(R.string.common_cancel), null)
+            .setPositiveButton(getString(R.string.common_delete)) { _, _ ->
+                runBulk(R.string.docs_bulk_deleted) { BulkApi.remove(docIds, folderIds) }
+            }
+            .show()
+    }
+
+    /** ZIP 일괄 다운로드. 서버 한도를 넘으면 요청하지 않고 안내한다. */
+    private fun bulkDownload() {
+        val (docIds, folderIds) = selectedTargets() ?: return
+        if (docIds.size > BulkApi.DOWNLOAD_MAX_DOCUMENTS || folderIds.size > BulkApi.DOWNLOAD_MAX_FOLDERS) {
+            toast(getString(R.string.docs_bulk_download_limit, BulkApi.DOWNLOAD_MAX_DOCUMENTS, BulkApi.DOWNLOAD_MAX_FOLDERS))
+            return
+        }
+        DocumentDownloader.downloadBulk(this, lifecycleScope, docIds, folderIds)
+    }
+
+    /** 일괄 작업 실행 → 결과 요약(부분 성공 포함) 안내 → 선택 해제 + 목록 새로고침. */
+    private fun runBulk(doneRes: Int, block: suspend () -> BulkResultDto) {
+        LoadingIndicator.show(this)
+        lifecycleScope.launch {
+            runCatching { block() }
+                .onSuccess { r ->
+                    toast(
+                        if (r.failedCount == 0) getString(doneRes, r.succeededCount)
+                        else getString(R.string.docs_bulk_partial, r.totalRequested, r.succeededCount, r.failedCount)
+                    )
+                    exitSelection()
+                    refresh()
+                }
+                .onFailure { e ->
+                    Log.w(TAG, "일괄 작업 실패", e)
+                    toast(getString(R.string.docs_bulk_failed, e.message ?: getString(R.string.common_unknown_error)))
+                }
+            LoadingIndicator.hide(this@DocumentsActivity)
+        }
+    }
+
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
+    /** 더보기(⋮)(즐겨찾기 중엔 롱클릭도) → 이름 변경/이동/삭제 팝업. 성공 시 현재 화면 상태에 맞춰 새로고침. */
     private fun showItemActions(item: FileItem) {
         TreeItemActionsHelper.show(this, lifecycleScope, item) { refresh() }
     }

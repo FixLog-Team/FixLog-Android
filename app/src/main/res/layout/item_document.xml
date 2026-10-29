@@ -8,6 +8,19 @@
     android:paddingEnd="4dp"
     android:background="?attr/selectableItemBackground">
 
+    <!-- 다중 선택 체크박스: 선택 모드에서만 보인다. 체크 상태는 selected 로 표시(행 클릭으로 토글). -->
+    <ImageView
+        android:id="@+id/cb_select"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="10dp"
+        android:src="@drawable/checkbox_select"
+        android:importantForAccessibility="no"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
     <!-- 폴더/문서 아이콘 -->
     <ImageView
         android:id="@+id/iv_icon"
@@ -16,7 +29,7 @@
         android:src="@drawable/ic_folder"
         android:contentDescription="@string/item_icon"
         app:tint="@color/editor_blue"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@id/cb_select"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
