@@ -27,8 +27,8 @@ android {
         applicationId = "kr.co.fixlog"
         minSdk = 33
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
