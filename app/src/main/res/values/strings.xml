@@ -349,4 +349,7 @@
     <string name="editor_image_invalid_type">JPG, PNG, GIF, WebP, SVG 이미지만 업로드할 수 있어요.</string>
     <string name="editor_image_too_large">이미지가 너무 커요. GIF·SVG는 1MB, 그 외 이미지는 10MB 이하만 올릴 수 있어요.</string>
     <string name="editor_image_upload_failed">이미지 업로드에 실패했어요: %1$s</string>
+    <string name="orphaned_badge">접근 불가 폴더에 있음</string>
+    <string name="orphaned_hint">원래 상위 폴더에 접근 권한이 없어 이 위치에 표시되고 있어요. 실제 위치는 다릅니다.</string>
+    <string name="share_inherited">상속됨</string>
 </resources>

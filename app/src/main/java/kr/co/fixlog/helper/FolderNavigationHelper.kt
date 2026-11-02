@@ -124,7 +124,8 @@ class FolderNavigationHelper(
                 parentId = parentId,
                 // 웹과 동일하게 소유자=생성자(createUser). 이름 해석은 목록 화면에서 수행.
                 owner = it.createUser,
-                createUser = it.createUser
+                createUser = it.createUser,
+                orphaned = it.orphaned
             )
         }
         val documents = contents.documents.map {
@@ -136,7 +137,8 @@ class FolderNavigationHelper(
                 parentId = parentId,
                 owner = it.createUserName ?: it.createUser,
                 createUser = it.createUser,
-                labels = it.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty()
+                labels = it.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty(),
+                orphaned = it.orphaned
             )
         }
         return folders + documents

@@ -73,7 +73,7 @@ class DocumentAdapter(
                 if (item.type == FileType.FOLDER) itemView.context.getString(R.string.tree_untitled_folder) else itemView.context.getString(R.string.tree_untitled)
             }
             tvMeta.text = buildMeta(item)
-            bindLabels(item.labels)
+            bindLabels(item.labels, item.orphaned)
 
             when (item.type) {
                 FileType.FOLDER -> {
@@ -125,19 +125,28 @@ class DocumentAdapter(
             return parts.joinToString(" · ").ifBlank { "—" }
         }
 
-        /** 라벨 칩을 동적으로 채운다. 없으면 라벨 행을 숨긴다. */
-        private fun bindLabels(labels: List<String>) {
+        /** 라벨 칩을 동적으로 채운다. 고아 항목이면 맨 앞에 안내 칩을 둔다. 둘 다 없으면 라벨 행을 숨긴다. */
+        private fun bindLabels(labels: List<String>, orphaned: Boolean) {
             llLabels.removeAllViews()
-            if (labels.isEmpty()) {
+            if (labels.isEmpty() && !orphaned) {
                 llLabels.visibility = View.GONE
                 return
             }
             llLabels.visibility = View.VISIBLE
             val ctx = llLabels.context
+            if (orphaned) {
+                llLabels.addView(makeChip(ctx.getString(R.string.orphaned_badge)).also {
+                    it.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_folder_x, 0, 0, 0)
+                    it.compoundDrawablePadding = dp(4)
+                    it.gravity = android.view.Gravity.CENTER_VERTICAL
+                    it.contentDescription = ctx.getString(R.string.orphaned_hint)
+                    androidx.appcompat.widget.TooltipCompat.setTooltipText(it, ctx.getString(R.string.orphaned_hint))
+                })
+            }
             val shown = labels.take(maxLabels)
             shown.forEachIndexed { index, label ->
                 llLabels.addView(makeChip(label).also {
-                    if (index > 0) (it.layoutParams as LinearLayout.LayoutParams).marginStart = dp(4)
+                    if (index > 0 || orphaned) (it.layoutParams as LinearLayout.LayoutParams).marginStart = dp(4)
                 })
             }
             if (labels.size > shown.size) {

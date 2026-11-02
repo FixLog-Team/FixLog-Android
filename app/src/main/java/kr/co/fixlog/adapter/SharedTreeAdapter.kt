@@ -75,6 +75,10 @@ class SharedTreeAdapter(
         private val ivIcon: ImageView = itemView.findViewById(R.id.iv_icon)
         private val tvName: TextView = itemView.findViewById(R.id.tv_name)
         private val tvMeta: TextView = itemView.findViewById(R.id.tv_meta)
+        private val tvOrphaned: TextView = itemView.findViewById<TextView>(R.id.tv_orphaned).also {
+            androidx.appcompat.widget.TooltipCompat.setTooltipText(it, it.context.getString(R.string.orphaned_hint))
+            it.contentDescription = it.context.getString(R.string.orphaned_hint)
+        }
 
         fun bind(node: Node) {
             val item = node.item
@@ -85,6 +89,7 @@ class SharedTreeAdapter(
             tvName.text = item.name.ifBlank { if (isFolder) itemView.context.getString(R.string.tree_untitled_folder) else itemView.context.getString(R.string.tree_untitled) }
             tvMeta.text = buildMeta(item)
             tvMeta.visibility = if (tvMeta.text.isBlank()) View.GONE else View.VISIBLE
+            tvOrphaned.visibility = if (item.orphaned) View.VISIBLE else View.GONE
             ivIcon.setImageResource(if (isFolder) R.drawable.ic_folder else R.drawable.ic_file)
 
             if (isFolder) {
@@ -134,11 +139,11 @@ class SharedTreeAdapter(
             if (contents != null) {
                 val childNodes = contents.folders.map {
                     Node(FileItem(it.folderId, it.folderName, FileType.FOLDER,
-                        it.updateTime?.take(10).orEmpty(), owner = it.createUser), node.depth + 1)
+                        it.updateTime?.take(10).orEmpty(), owner = it.createUser, orphaned = it.orphaned), node.depth + 1)
                 } + contents.documents.map {
                     Node(FileItem(it.documentId, it.title, FileType.FILE,
                         (it.updateTime ?: it.createTime)?.take(10).orEmpty(),
-                        owner = it.createUserName ?: it.createUser), node.depth + 1)
+                        owner = it.createUserName ?: it.createUser, orphaned = it.orphaned), node.depth + 1)
                 }
                 node.children.clear()
                 node.children.addAll(childNodes)

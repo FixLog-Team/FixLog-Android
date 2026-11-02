@@ -547,7 +547,8 @@ class DocumentsActivity : AppCompatActivity() {
                     date = (it.updateTime ?: it.createTime)?.take(10).orEmpty(),
                     parentId = it.parentId,
                     owner = OwnerNames.resolve(ownerNames, it.createUser),
-                    createUser = it.createUser
+                    createUser = it.createUser,
+                    orphaned = it.orphaned
                 )
             } + found.documents.map {
                 FileItem(
@@ -558,7 +559,8 @@ class DocumentsActivity : AppCompatActivity() {
                     parentId = it.folderId,
                     owner = it.createUserName ?: OwnerNames.resolve(ownerNames, it.createUser),
                     createUser = it.createUser,
-                    labels = it.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty()
+                    labels = it.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty(),
+                    orphaned = it.orphaned
                 )
             }
         }

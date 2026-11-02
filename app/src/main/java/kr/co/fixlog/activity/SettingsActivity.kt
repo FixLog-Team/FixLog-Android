@@ -239,12 +239,13 @@ class SettingsActivity : AppCompatActivity() {
             }.getOrDefault(SharedResourcesDto())
             val items = result.folders.map {
                 FileItem(it.folderId, it.folderName, FileType.FOLDER, it.updateTime?.take(10).orEmpty(),
-                    owner = it.createUser)
+                    owner = it.createUser, orphaned = it.orphaned)
             } + result.documents.map {
                 // 문서 상세/공유 응답에는 작성자 이름(createUserName)이 포함되므로 우선 사용.
                 FileItem(it.documentId, it.title, FileType.FILE, (it.updateTime ?: it.createTime)?.take(10).orEmpty(),
                     owner = it.createUserName ?: it.createUser,
-                    labels = it.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty())
+                    labels = it.labels?.mapNotNull { l -> l.labelName?.takeIf(String::isNotBlank) }.orEmpty(),
+                    orphaned = it.orphaned)
             }
             if (tab != sharedTab) return@launch // 그 사이 탭이 바뀌었으면 무시
             hideSharedSkeleton()

@@ -346,4 +346,7 @@
     <string name="editor_image_invalid_type">Only JPG, PNG, GIF, WebP and SVG images can be uploaded.</string>
     <string name="editor_image_too_large">Image is too large. GIF/SVG must be 1MB or smaller, other images 10MB or smaller.</string>
     <string name="editor_image_upload_failed">Image upload failed: %1$s</string>
+    <string name="orphaned_badge">In an inaccessible folder</string>
+    <string name="orphaned_hint">Shown here because you can\'t access its original parent folder. Its actual location is different.</string>
+    <string name="share_inherited">Inherited</string>
 </resources>

@@ -92,10 +92,16 @@ object ShareDialogHelper {
             val row = inflater.inflate(R.layout.item_permission, container, false)
             row.findViewById<TextView>(R.id.tv_principal).text =
                 (p.principalName?.ifBlank { null } ?: activity.getString(R.string.share_user)) +
-                    (if (p.principalType.equals("GROUP", true)) activity.getString(R.string.share_group_suffix) else "")
+                    (if (p.principalType.equals("GROUP", true)) activity.getString(R.string.share_group_suffix)
+                    else p.principalEmail?.ifBlank { null }?.let { " ($it)" }.orEmpty())
+            val inherited = p.inheritedFromFolderId != null
             row.findViewById<TextView>(R.id.tv_badge).text =
-                activity.getString(R.string.share_allowed) + (if (p.canDownload == false) activity.getString(R.string.share_no_export_suffix) else "")
-            row.findViewById<ImageView>(R.id.btn_revoke).setOnClickListener {
+                activity.getString(if (inherited) R.string.share_inherited else R.string.share_allowed) +
+                    (if (p.canDownload == false) activity.getString(R.string.share_no_export_suffix) else "")
+            val btnRevoke = row.findViewById<ImageView>(R.id.btn_revoke)
+            // 상속된 권한은 상위 폴더에서만 회수할 수 있어 회수 버튼을 숨긴다.
+            btnRevoke.visibility = if (inherited) View.GONE else View.VISIBLE
+            btnRevoke.setOnClickListener {
                 scope.launch {
                     runCatching { ShareApi.revoke(kind, id, p.permissionId) }
                         .onSuccess {

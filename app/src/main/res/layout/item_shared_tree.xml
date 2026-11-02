@@ -54,6 +54,24 @@
             android:ellipsize="end"
             android:maxLines="1" />
 
+        <!-- 고아 항목 뱃지: 원래 상위 폴더에 접근 불가라 이 위치에 떠 있음. -->
+        <TextView
+            android:id="@+id/tv_orphaned"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_tag"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:drawableStart="@drawable/ic_folder_x"
+            android:drawablePadding="4dp"
+            android:gravity="center_vertical"
+            android:text="@string/orphaned_badge"
+            android:textSize="11sp"
+            android:textColor="@color/editor_meta"
+            android:maxLines="1"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/tv_meta"
             android:layout_width="match_parent"

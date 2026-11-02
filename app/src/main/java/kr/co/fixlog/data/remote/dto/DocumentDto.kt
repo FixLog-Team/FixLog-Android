@@ -25,5 +25,8 @@ data class DocumentDto(
     val updateUser: String?,
     val updateTime: String?,
     val createUserName: String? = null,
-    val labels: List<LabelDto>? = null
+    val labels: List<LabelDto>? = null,
+    // 원래 폴더에 접근 권한이 없어 가장 가까운 접근 가능 조상 목록에 끌어올려진 문서면 true.
+    val orphaned: Boolean = false,
+    val originalFolderId: String? = null
 )

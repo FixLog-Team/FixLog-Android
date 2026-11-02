@@ -14,5 +14,8 @@ data class FolderDto(
     val createUser: String?,
     val createTime: String?,
     val updateUser: String?,
-    val updateTime: String?
+    val updateTime: String?,
+    // 원래 부모 폴더에 접근 권한이 없어 가장 가까운 접근 가능 조상 목록에 끌어올려진 항목이면 true.
+    val orphaned: Boolean = false,
+    val originalParentId: String? = null
 )
