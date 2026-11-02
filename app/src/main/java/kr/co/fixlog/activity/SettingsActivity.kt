@@ -12,11 +12,19 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
+import androidx.core.view.doOnLayout
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePadding
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.gms.ads.AdListener
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
+import kr.co.fixlog.BuildConfig
 import kr.co.fixlog.R
 import kr.co.fixlog.adapter.DocumentAdapter
 import kr.co.fixlog.data.remote.AuthApi
@@ -46,6 +54,7 @@ import org.json.JSONObject
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
+    private var adView: AdView? = null
 
     /** 마지막으로 조회한 워크스페이스 목록(전환/나가기 판단용). */
     private var workspaces: List<WorkspaceDto> = emptyList()
@@ -78,6 +87,7 @@ class SettingsActivity : AppCompatActivity() {
 
         setupThemeTabs()
         setupSharedTabs()
+        setupBanner()
         loadAccount()
         CoachMark.show(this, "settings",
             CoachMark.Step(binding.tabTheme, R.string.coach_settings_theme),
@@ -98,6 +108,38 @@ class SettingsActivity : AppCompatActivity() {
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {}
         })
+    }
+
+    /** 하단 탭 바로 위에 AdMob 적응형 배너를 띄운다. 로드에 성공했을 때만 보이고, 그만큼 목록 아래 여백을 늘린다. */
+    private fun setupBanner() {
+        val widthDp = (resources.displayMetrics.widthPixels / resources.displayMetrics.density).toInt()
+        val ad = AdView(this).apply {
+            // 디버그 빌드는 구글 테스트 광고 단위(실제 단위로 테스트하면 무효 트래픽으로 계정이 제재될 수 있음).
+            adUnitId = if (BuildConfig.DEBUG) "ca-app-pub-3940256099942544/9214589741" else "ca-app-pub-3565260072766548/6050459444"
+            setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this@SettingsActivity, widthDp))
+            adListener = object : AdListener() {
+                override fun onAdLoaded() {
+                    binding.adContainer.visibility = View.VISIBLE
+                    binding.adContainer.doOnLayout { c ->
+                        binding.scroll.updatePadding(bottom = binding.scroll.paddingBottom + c.height)
+                    }
+                }
+            }
+        }
+        adView = ad
+        binding.adContainer.addView(ad)
+        // 탭(아래 여백 12dp 포함) 바로 위에 붙인다.
+        binding.bottomNav.root.doOnLayout { nav ->
+            binding.adContainer.updateLayoutParams<android.widget.FrameLayout.LayoutParams> {
+                bottomMargin = nav.height + (20 * resources.displayMetrics.density).toInt()
+            }
+        }
+        ad.loadAd(AdRequest.Builder().build())
+    }
+
+    override fun onDestroy() {
+        adView?.destroy()
+        super.onDestroy()
     }
 
     override fun onResume() {

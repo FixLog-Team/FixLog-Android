@@ -8,6 +8,7 @@
     android:background="@color/editor_bg">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingBottom="96dp"
@@ -327,6 +328,14 @@
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <!-- AdMob 배너: 하단 탭 바로 위에 고정. 아래 여백은 탭 높이에 맞춰 코드에서 지정, 로드 성공 시 표시. -->
+    <FrameLayout
+        android:id="@+id/ad_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:visibility="gone" />
 
     <include
         android:id="@+id/bottom_nav"

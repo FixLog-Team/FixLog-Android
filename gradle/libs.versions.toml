@@ -16,8 +16,10 @@ coroutines = "1.8.1"
 lifecycle = "2.8.7"
 securityCrypto = "1.1.0-alpha06"
 swiperefreshlayout = "1.1.0"
+playServicesAds = "24.4.0"
 
 [libraries]
+play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
