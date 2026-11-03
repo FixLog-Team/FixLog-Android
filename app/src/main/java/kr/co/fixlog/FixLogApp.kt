@@ -1,6 +1,7 @@
 package kr.co.fixlog
 
 import android.app.Application
+import com.google.android.gms.ads.MobileAds
 import kr.co.fixlog.data.remote.ApiClient
 import kr.co.fixlog.util.SessionManager
 import kr.co.fixlog.util.ThemeManager
@@ -19,5 +20,7 @@ class FixLogApp : Application() {
         SessionManager.init(this)
         // 저장된 다크/라이트 테마를 앱 시작 시 적용.
         ThemeManager.apply(this)
+        // 광고 SDK 초기화는 메인 스레드를 막지 않도록 백그라운드에서.
+        Thread { MobileAds.initialize(this) }.start()
     }
 }
