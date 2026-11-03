@@ -349,4 +349,5 @@
     <string name="orphaned_badge">In an inaccessible folder</string>
     <string name="orphaned_hint">Shown here because you can\'t access its original parent folder. Its actual location is different.</string>
     <string name="share_inherited">Inherited</string>
+    <string name="settings_version">Version %1$s</string>
 </resources>

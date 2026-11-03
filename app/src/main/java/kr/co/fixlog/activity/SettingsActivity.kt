@@ -81,6 +81,7 @@ class SettingsActivity : AppCompatActivity() {
         BottomNav.setup(this, binding.bottomNav, BottomNav.Tab.SETTINGS)
 
         binding.btnLogout.setOnClickListener { confirmLogout() }
+        binding.tvVersion.text = getString(R.string.settings_version, BuildConfig.VERSION_NAME)
         binding.cardWorkspace.setOnClickListener { showSwitchWorkspaceDialog() }
         binding.btnAddWs.setOnClickListener { showAddWorkspaceDialog() }
         binding.btnLeaveWs.setOnClickListener { confirmLeaveOrDelete() }

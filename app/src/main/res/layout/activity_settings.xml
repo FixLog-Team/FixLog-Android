@@ -326,6 +326,17 @@
                 app:icon="@drawable/ic_logout"
                 style="@style/Widget.FixLog.Button.Danger" />
 
+            <!-- 앱 버전 -->
+            <TextView
+                android:id="@+id/tv_version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:gravity="center"
+                android:textSize="12sp"
+                android:textColor="@color/editor_meta" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
