@@ -116,7 +116,7 @@ class SettingsActivity : AppCompatActivity() {
         val widthDp = (resources.displayMetrics.widthPixels / resources.displayMetrics.density).toInt()
         val ad = AdView(this).apply {
             // 디버그 빌드는 구글 테스트 광고 단위(실제 단위로 테스트하면 무효 트래픽으로 계정이 제재될 수 있음).
-            adUnitId = if (BuildConfig.DEBUG) "ca-app-pub-3940256099942544/9214589741" else "ca-app-pub-3565260072766548/6050459444"
+            adUnitId = if (BuildConfig.DEBUG) "ca-app-pub-3940256099942544/9214589741" else "ca-app-pub-3565260072766548/9734399021"
             setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this@SettingsActivity, widthDp))
             adListener = object : AdListener() {
                 override fun onAdLoaded() {
